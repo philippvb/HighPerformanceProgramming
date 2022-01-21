@@ -1,7 +1,7 @@
 NAME = Philipp
-hello1 $(NAME):
+hello1 :
 	echo Hello1 $(NAME)
 hello2 :
-	echo Hello2
+	echo Hello2 $(NAME)
 hello3 :
-	echo Hello3
+	echo Hello3 $(NAME)
