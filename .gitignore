@@ -1,3 +1,29 @@
+# custom
+
+# ignore all executables:
+*
+!/**/
+!*.*
+
+# tar balls
+*.tar.gz
+
+# assembler
+*.s
+
+# preprocessor files
+*.i
+
+# object files
+*.o
+
+# hidden mac files
+*.DS_STORE
+
+
+
+# standard gitignore c template
+
 # Prerequisites
 *.d
 
