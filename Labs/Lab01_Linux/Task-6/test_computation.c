@@ -7,7 +7,7 @@ int main()
 {
   int i, k;
   float sum = 0.0;
-  int N = 1000;
+  int N = 100000000;
   /* This is no interesting computation, just something to make the program bysy. */
   for(k = 0; k < N; k++) {
     arr[0] = 1;
