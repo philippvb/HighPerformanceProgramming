@@ -16,7 +16,9 @@ typedef struct list_node{
 // insert functions
 void insert_behind(node_t *node, node_t *new_node){
     if(node->day == new_node->day){
-        printf("Day %d already exists, skipping\n", new_node->day);
+        node->min = new_node->min;
+        node->max = new_node->max;
+        free(new_node);
         return;
     }
     else if ((node->next == NULL) || (node->next->day > new_node->day)){
@@ -118,7 +120,6 @@ int scanfinput(node_t **head){
         print_list(*head);
         break;
     case 'Q':{
-        printf("Quitting ...\n");
         delete_list(head);
         }
         return 0;
