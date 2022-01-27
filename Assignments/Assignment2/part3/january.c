@@ -14,35 +14,43 @@ typedef struct list_node{
 
 
 // insert functions
-void insert_behind(node_t **node, node_t **new_node){
-    if (((*node)->next == NULL) || ((*node)->next->day > (*new_node)->day)){
-        (*new_node)->next = (*node)->next;
-        (*node)->next = *new_node;
+void insert_behind(node_t *node, node_t *new_node){
+    if(node->day == new_node->day){
+        printf("Day %d already exists, skipping\n", new_node->day);
+        return;
     }
-    else insert_behind(&(*node)->next, new_node);
+    else if ((node->next == NULL) || (node->next->day > new_node->day)){
+        new_node->next = node->next;
+        node->next = new_node;
+    }
+    else insert_behind(node->next, new_node);
 }
 
-void insert_node(node_t **head, node_t **new_node){
-    // if(head == NULL){
-    //     head = new_node;
-    // }
-    if((*head)->day > (*new_node)->day){
-        (*new_node)->next = *head;
-        *head = *new_node;
+void insert_node(node_t **head, node_t *new_node){
+    if(*head == NULL){
+        *head = new_node;
+    }
+    else if((*head)->day > new_node->day){
+        new_node->next = *head;
+        *head = new_node;
     }
     else{
-        insert_behind(head, new_node);
+        insert_behind(*head, new_node);
     }
 }
 
 void delete_node(node_t **head, int day){
+    if(*head == NULL) return;
     node_t *node = *head;
     node_t *father_node = NULL;
+    // check if root is desired node
     if(node->day == day){
         *head = node->next;
     }
     else{
+        // go until node found
         while(node != NULL){
+            // if found delete
             if(node->day == day){
                 father_node->next = node->next;
                 free(node);
@@ -54,24 +62,21 @@ void delete_node(node_t **head, int day){
     }
 }
 
-void deletelist(node_t **head){
-    while((*head)->next != NULL){
-        node_t *node = *head;
-        while(node->next->next != NULL){
-            node = node->next;
-        }
-        free(node->next);
-        node->next = NULL;
+void delete_list(node_t **head){
+    node_t *current = *head;
+    node_t *next;
+    while(current != NULL){
+        next = current->next;
+        free(current);
+        current = next;
     }
-    free(*head);
-    *head = NULL;
+    *head = NULL; //set the head to 0 to show the rest of the code that the list is empty
 }
 
 
 
-void print_list(node_t **head){
+void print_list(node_t *node){
     printf("day\tmin\tmax\n");
-    node_t *node = *head;
     while(node != NULL){
         printf("%d\t%f\t%f\n", node->day, node->min, node->max);
         node = node->next;
@@ -90,7 +95,7 @@ int scanfinput(node_t **head){
         new_node->next = NULL;
         n_read = scanf(" %d %lf %lf", &new_node->day, &new_node->min, &new_node->max);
         if ((n_read == 3) && (new_node->day > 0) && (new_node->day < 32)){
-            insert_node(head, &new_node);
+            insert_node(head, new_node);
         }
         else{
             printf("Wrong parameter format for command \"A\" valid format is [int day double double]\n");
@@ -110,11 +115,11 @@ int scanfinput(node_t **head){
         }
         break;
     case 'P':
-        print_list(head);
+        print_list(*head);
         break;
     case 'Q':{
         printf("Quitting ...\n");
-        deletelist(head);
+        delete_list(head);
         }
         return 0;
     default:
@@ -129,27 +134,9 @@ return 1;
 
 
 int main(){
-    node_t **head = NULL;
-    node_t *first_node = malloc(sizeof(node_t));
-    first_node->day = 0;
-    first_node->min = 0;
-    first_node->max = 10;
-    first_node->next = NULL;
-    // node_t *second_node = malloc(sizeof(node_t));
-    // second_node->day = 5;
-    // second_node->min = 0;
-    // second_node->max = 20;
-    // second_node->next = NULL;
-    // node_t *third_node = malloc(sizeof(node_t));
-    // third_node->day = -1;
-    // third_node->min = 0;
-    // third_node->max = 20;
-    // third_node->next = NULL;
-    head = &first_node;
-    // insert_node(head, &second_node);
-    // insert_node(head, &third_node);
-    // print_list(head);
-    while (scanfinput(head)){
+    node_t *head = NULL;
+
+    while (scanfinput(&head)){
         continue;
     }
     return 0;
