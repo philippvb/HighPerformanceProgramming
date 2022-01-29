@@ -20,6 +20,9 @@
 # hidden mac files
 *.DS_STORE
 
+# tmpdir
+tmpdir_for_checking/
+
 
 
 # standard gitignore c template
