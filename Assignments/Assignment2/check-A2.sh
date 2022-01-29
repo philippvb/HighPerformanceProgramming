@@ -1,4 +1,5 @@
 # Script for checking format of A2.tar.gz file for Assignment 2 subimssion
+function timeout() { perl -e 'alarm shift; exec @ARGV' "$@"; }
 
 # Remove old tmpdir_for_checking if it exists
 rm -rf tmpdir_for_checking
