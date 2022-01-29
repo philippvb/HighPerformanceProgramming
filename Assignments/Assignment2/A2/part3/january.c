@@ -48,6 +48,7 @@ void delete_node(node_t **head, int day){
     // check if root is desired node
     if(node->day == day){
         *head = node->next;
+        free(node);
     }
     else{
         // go until node found
