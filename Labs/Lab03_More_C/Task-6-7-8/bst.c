@@ -29,12 +29,14 @@ void print_bst(node_t *node)
 
 
 void delete_tree(node_t **node){
+   if(*node == NULL) return;
    if ((*node)->left != NULL){
       delete_tree(&(*node)->left);
    }
    if ((*node)->right != NULL){
       delete_tree(&(*node)->right);
    }
+   free((*node)->name);
    free(*node);
    *node = NULL;
 }
@@ -67,17 +69,15 @@ void insert(node_t **node, int ID, char *name)
 
 
 void search(node_t *node, int ID){
+   if(node == NULL) {printf("Plant with ID %d does not exist!\n", ID); return;};
    if(node->ID == ID){
      printf("Plant with ID %d has name %s\n", node->ID, node->name);
    }
-   else if ((node->ID < ID) && (node->right != NULL)){
+   else if (node->ID < ID){
      search(node->right, ID);
    }
-   else if ((node->ID > ID) && (node->left != NULL)){
+   else if (node->ID > ID){
      search(node->left, ID);
-   }
-   else{
-      printf("Plant with ID %d does not exist!\n", ID);
    }
 }
 

@@ -1,0 +1,14 @@
+Time complexity
+denote by c the time to run swap, which is constant
+then we get the following time because of the loops:
+n * 2c + (n-1) * 2c + ... + 2c = (n + (n-1) + ... + 1) *2c = (n^2-n)/2*2c in O(n^2)
+because of Gauss
+results:
+6: 0.00s user 0.00s system 62% cpu 0.003 total
+10: 0.04s user 0.00s system 96% cpu 0.040 total
+12: ./permutations "abvbdhdhdohs"  4.82s user 0.01s system 99% cpu 4.828 total
+
+Space complexity
+we just have one char array where we swap values, this array is constant thus space complexity is constant 
+
+

@@ -14,6 +14,7 @@ int main(){
     int x = 10;
     void (*func_pointer)(int);
     func_pointer = print_int_1;
+    func_pointer(x);
     func_pointer = print_int_2;
     func_pointer(x);
 }

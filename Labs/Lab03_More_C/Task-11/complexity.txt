@@ -1,0 +1,10 @@
+best case:
+O(n) since we only need to go through the loop once
+worst case
+O(n^2) since we need to transfer n + n-1 + ... 1 = n^2-n/2 times in worst case
+
+results:
+100: 0.00s user 0.00s system 61% cpu 0.004 total
+1000: 0.00s user 0.00s system 74% cpu 0.006 total
+10000: 0.14s user 0.00s system 98% cpu 0.144 total
+100000: 20.77s user 0.03s system 99% cpu 20.809 total
