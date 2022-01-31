@@ -21,25 +21,26 @@ int main(int argc, char *argv[])
     FILE * fp = fopen(filename, "r");
 
     int total_prods;
-    fscanf(fp, "%d", & total_prods);
+    fscanf(fp, "%d", &total_prods);
     printf("Total prods: %d\n", total_prods);
 
-    char cur_item[20];
+    char cur_item[50];
     float cur_price;
 
-    product_t *arr_of_prods = malloc((total_prods-1) * sizeof(product_t));
-    int n_of_prods = 0;
+    product_t *arr_of_prods = malloc((total_prods) * sizeof(product_t));
 
-    while (fscanf(fp, "%s %f", cur_item, &cur_price)!=EOF){
+    for(int i=0; i<total_prods; i++){
+        fscanf(fp, "%s %f", cur_item, &cur_price);
         product_t new_item;
         strcpy(new_item.name, cur_item);
         new_item.price = cur_price;
-        arr_of_prods[n_of_prods] = new_item;
-        n_of_prods += 1;
+        arr_of_prods[i] = new_item;
     }
+
     
-    for(int i=0; i<n_of_prods; i++){
+    for(int i=0; i<total_prods; i++){
         printf("%s %1.f\n", arr_of_prods[i].name, arr_of_prods[i].price);
     }
+    free(arr_of_prods);
 
 return 0; }

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define STACK_SIZE 3
+#define STACK_SIZE 10
 
 void extend_and_transer_stack(int stack_array[], int *memory_array[], int n_stack_elements, int *n_mem_elements, int *memory_size){
     // extend memory if needed
@@ -20,12 +20,12 @@ int main()
 
 int stack_arr[STACK_SIZE];
 int stack_count=0;
-int *memory_arr = (int *)malloc(STACK_SIZE*sizeof(int));
-int memory_size = STACK_SIZE;
+int *memory_arr = (int *)malloc(0);
+int memory_size = 0;
 int memory_count = 0;
 
 int total_count = 0;
-printf("Enter array values one by one");
+printf("Enter array values: ");
 while(scanf("%d", stack_arr + stack_count)){
     total_count ++;
     stack_count++;
@@ -40,10 +40,12 @@ extend_and_transer_stack(stack_arr, &memory_arr, stack_count, &memory_count, &me
 
 
 int memory_sum=0;
+printf("Output: ");
 for(int i=0; i<memory_size; i++){
         printf("%d ", memory_arr[i]);
         memory_sum += memory_arr[i];
 }
-printf("Sum: %d", memory_sum);
+printf("\nSum: %d", memory_sum);
+free(memory_arr);
 
 return 0; }
