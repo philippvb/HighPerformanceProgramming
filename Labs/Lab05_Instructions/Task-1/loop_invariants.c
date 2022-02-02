@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define FAST 0
+#define FAST 1
 
 int main(int argc, char **argv)
 {

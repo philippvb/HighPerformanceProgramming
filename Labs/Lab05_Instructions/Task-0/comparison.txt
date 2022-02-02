@@ -1,0 +1,21 @@
+regularcode
+1.0000499600361
+./regularcode 1.78s user 0.00s system 87% cpu 2.047 total
+
+malloycode
+1.0000059952043
+./mallocycode 1.49s user 0.19s system 90% cpu 1.874 total
+we see that this code spends a lot on system since it performs a lot of malloc calls
+
+sleepycode
+     1.0000499600361
+./sleepycode 1.80s user 0.00s system 25% cpu 6.974 total
+
+from the sleep we get a lot of total time but not a lot of user time etc
+
+threadedcode
+main thread result :      1.0000499600361
+other thread result:      1.0000499600361
+./threadedcode  3.69s user 0.01s system 184% cpu 2.003 total
+
+here we see that each thread uses quite a bit of time and we also see that system load is over 100%

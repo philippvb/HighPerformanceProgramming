@@ -1,0 +1,8 @@
+short-circuit
+- Base case: 0.15s without opt and 0.13s with O3
+- optimized: 0.11s without opt and 0.1 with O3
+
+bounds:
+    - base case: 0.24s vs 0.23 s
+    - even with optimization doesnt change anything
+

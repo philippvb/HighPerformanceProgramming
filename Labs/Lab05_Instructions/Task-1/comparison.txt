@@ -1,0 +1,42 @@
+loop invariants:
+- No optimization:
+    - 0.64s user 0.08s system 99% cpu 0.722 total slow
+    - 0.60s user 0.08s system 99% cpu 0.679 total fast
+
+- O1
+    - 0.18s user 0.08s system 97% cpu 0.266 total in slow
+    - 0.17s user 0.07s system 99% cpu 0.241 total in fast
+
+- O2
+    - 0.14s user 0.07s system 99% cpu 0.214 total in slow
+    - 0.14s user 0.07s system 99% cpu 0.215 total in fast
+
+- O3
+    - 0.14s user 0.07s system 99% cpu 0.217 total in slow
+    - 0.14s user 0.07s system 98% cpu 0.214 total in fast
+
+We see that without optimization we loose performance however if we optimize the
+difference disappears
+
+
+
+String loop
+The for loop should be faster, since its easier for the compiler to optimize,
+for example loop unrolling. Interestingly however, the while loop performs
+faster without optimization, 0.5s vs 0.65s.
+
+However if we turn on -O3 or O2, we can see a shift where fast goes to 0.01s and slow goes to 0.39s.
+With -01, slow is still faster with 0.34 vs 0.37
+
+
+Array loop
+Without optimization the do while should be faster since we don't need to
+increase an iterator. With optimization, slow should be faster since we can
+optimize our code.
+- Results:
+    - with no optimization, we get 0.67s in slow and 0.64 in fast
+    - with -O3 we get 0.23 in fast but 0.01 in slow, so we can see that it was
+    better to optimize for the compiler
+So the results match the expectations
+
+
