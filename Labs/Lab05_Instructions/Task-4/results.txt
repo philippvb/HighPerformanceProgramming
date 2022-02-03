@@ -1,0 +1,21 @@
+memset
+    - Expectation: The fast one should be faster since we dont iterate through a
+    loop.
+    - Results: 0.12 for slow and 0.01 for fast, when -Ofast same speed
+
+lookup
+    - Expectation: fast one should be better due to just memory acces
+    - Result: 0.22 slow and 0.12 fast, still stands with 0.14 vs 0.0 after optimization
+    - In general every function where we get some input more frequent then other, especially if they are way more costly
+
+strength_reduction
+    - output in 0.52s:
+        1 2 3 1, 0.100000 0.500000 0.330000
+        30 480 32 16, 0.496241 0.660000 0.373113
+    - we get it down to 0.07, could get it further but then no computations anymore??
+
+math_functions
+    - pow: 0.45
+    - sqrt: 0.03
+    - sqrtf: 0.03
+The two sqrt functions are the fastest. I think this happens because sqrt is optimized for roots whereas pow is optimized for "normal" powers

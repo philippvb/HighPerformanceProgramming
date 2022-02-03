@@ -1,0 +1,18 @@
+norms:
+    - 0.242s no optimization
+    - 0.145 -O2
+    - 0.144 -O3
+    - 0.088 -Ofast
+
+denorms
+    - 4.797s no optimization
+    - 3.790 -O2
+    - 3.775 -O3
+    - 0.089 -Ofast
+
+We see that if we use -Ofast, the result gets flushed to 0. However this also
+significantly improves the time performance.
+
+If we set tiny to 1e-50, we see that our number is so small that it directly
+becomes 0. Thus the number is not denormalized anymore and the code already runs
+way fast without any optimization flags.
