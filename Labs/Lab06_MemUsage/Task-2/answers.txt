@@ -1,0 +1,14 @@
+- if we leave out the typedef, we get an unknown type error
+- if we define typedef after, we only get error in the sorting algs
+- int: 0.106
+- char 0.100
+- short int: 0.103
+- long int: 0.108
+- long int: 0.108
+
+-> char gives best performance, I think since it is the shortest type so
+comparisons take the least amount of time
+
+- since none of the other ints are used to compare, I think the time difference
+would be neglible. However in case of large lists, small types like char
+wouldn't be able to fit the number for example in loops anymore

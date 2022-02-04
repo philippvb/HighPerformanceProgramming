@@ -1,0 +1,9 @@
+- mergesort: 0.107s for 1000000
+- bubblesort: 2.174s for 100000
+- interestingly, on m1 mac it is faster if we dont use free calls?!
+- linux server: 10000000, 2.609s without free, 1.720 with
+- if we use one malloc, we get 0.084 for 1000000
+- if we use stack, we get 0.061s for 1000000, we run into issues if we go over that
+- if we call bubblesort on list <=10, then we get a time of 0.049s, if we go larger or smaller, time increases again
+
+

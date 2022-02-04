@@ -1,0 +1,7 @@
+- in general, the modify low should be faster since the data is way more local
+this is also what we see in the results
+
+- for me it only gets way faster when we move from 10 to 5, then the time drops from 0.23 to 0.04
+- the mac reports its cache size as hw.l1dcachesize: 65536, which doesnt match with the timings
+
+- we could test the cache line size by modifying the size of N, such that each element now takes 128 places
