@@ -1,5 +1,7 @@
 # custom
 
+settings.json
+
 # ignore all executables:
 *
 !/**/
