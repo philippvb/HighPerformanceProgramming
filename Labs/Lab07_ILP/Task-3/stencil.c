@@ -22,9 +22,9 @@ void apply_stencil_v2(const GridPt* grid_src, GridPt* grid_dst, int N) {
     for(j = STENCIL_SZ; j < N-STENCIL_SZ; j++) {
       double sum = 0;
       for(k = -STENCIL_SZ; k <= STENCIL_SZ; k++)
-        sum += grid_src[(i+k)*N+j].x;
-      for(k = -STENCIL_SZ; k <= STENCIL_SZ; k++)
-        sum += grid_src[i*N+j+k].x;
+        {sum += grid_src[(i+k)*N+j].x;
+        sum += grid_src[i*N+j+k].x;}
+        // sum += grid_src[(i+k)*N+j].x + grid_src[i*N+j+k].x;
       grid_dst[i*N+j].x = sum * factor;
     }
 }

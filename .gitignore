@@ -6,6 +6,8 @@ settings.json
 *
 !/**/
 !*.*
+!makefile
+!Makefile
 
 # tar balls
 *.tar.gz

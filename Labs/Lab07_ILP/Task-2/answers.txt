@@ -1,0 +1,5 @@
+- if we loop unroll and get rid of the if, we get a time boost:
+    - base: 1.093
+    - unroll: 0.170
+
+- even if we use -O3, our performance doesn't improve

@@ -1,0 +1,6 @@
+- if we do loop unrolling, have to get rid of -O2 -Wall -Werror, otherwise gets worse
+    - base: 1.698s
+    - unroll 2: 1.5s
+- if we use -O2, we get:
+    - base: 0.137
+    - unrull; 0.26

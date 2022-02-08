@@ -1,0 +1,3 @@
+- avoiding all if statements:
+    - normal: 0.52
+    - opt: 0.194

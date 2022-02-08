@@ -1,0 +1,9 @@
+- starting point: 0.518
+- for my computer, it doesnt change, it gets even a bit slower
+
+- if we turn optimization flags off, then we see a change:
+    - std: 1.2
+    - new: 0.7
+
+- this is same speed compared to the optimized code from task-4 without optimization
+

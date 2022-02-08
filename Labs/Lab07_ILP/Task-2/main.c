@@ -14,7 +14,7 @@ static double get_wall_seconds() {
 int main (int argc, char**args) {
 
   // Prepare input and output buffers for tests
-  const int N1 = 200;
+  const int N1 = 202;
   double* a1  = (double*)malloc(N1*sizeof(double));
   double* a2  = (double*)malloc(N1*sizeof(double));
   double* b1  = (double*)malloc(N1*sizeof(double));

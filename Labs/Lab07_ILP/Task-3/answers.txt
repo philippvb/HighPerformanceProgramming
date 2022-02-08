@@ -1,0 +1,5 @@
+- stencil1: 0.348
+- stencil2: if we just put both in one loop get worse performance?: 0.398
+- stencil2: get better performance if we put both in one statement: 0.23
+- if we make stencil_size smaller, the difference disappears since we only need to do small loops, and the compiler can optimize the loop by loop unrolling?
+
