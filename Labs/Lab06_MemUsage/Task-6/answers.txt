@@ -1,0 +1,6 @@
+- basic: 0.86s
+- with call moved out: 0.0s
+- with pure: same
+- when we move function in: 0.05s
+
+However when we move it in the counter becomes as high as in the beginning which suggests that the compiler doesn't store the result in main but rather within the pure function??

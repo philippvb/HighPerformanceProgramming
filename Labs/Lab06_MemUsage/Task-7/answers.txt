@@ -1,0 +1,3 @@
+- since we store the data rowwise, it is best to first iterate over the rows since
+    we get the full col read from the cache at once
+- it would even be better to do ikj, should be fastest

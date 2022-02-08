@@ -75,6 +75,23 @@ void mul_jik(int n, int **a, int **b, int **c)
   }
 }
 
+void mul_block(int n, int **a, int **b, int **c){
+  int i, j, k;
+  int block_size = 100;
+  int n_blocks = n/block_size;
+  for(int iblock=0; iblock<n_blocks; iblock++){
+    for(int kblock=0; kblock<n_blocks; kblock++){
+      for(int i=iblock*block_size; i<(iblock+1)*block_size; i++){
+        for(int k=kblock*block_size; k<(kblock+1)*block_size; k++){
+          for(int j=0; j<n; j++){
+            c[i][j] += a[i][k] * b[k][j];
+          }
+        }
+      }
+    }
+  }
+}
+
 int main()
 {
   int i, j, n;
@@ -104,6 +121,10 @@ int main()
 
   allocate_mem(&c, n);
 
+  time=get_wall_seconds();
+  mul_block(n, a, b, c);
+  time=get_wall_seconds()-time;
+  printf("Version block, time = %f\n",time);
   time=get_wall_seconds();
   mul_kij(n, a, b, c);
   time=get_wall_seconds()-time;

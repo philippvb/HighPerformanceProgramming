@@ -1,0 +1,7 @@
+- restrict doesnt seem to improve performance up to now
+- no we didnt get an improvement in performance from changing no to NP
+- by adding the const keyword, we get a big performance improvement down from 0.197s to 0.037s
+- if we move our variable inside the function, it doesnt change wether we use
+const or not. I think this is because since NP is a local variable now, the
+compiler can be sure that nobody else changes it and since it doesnt get changed
+inside the function thus declare it a const itself
