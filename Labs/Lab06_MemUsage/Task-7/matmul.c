@@ -80,10 +80,10 @@ void mul_block(int n, int **a, int **b, int **c){
   int block_size = 100;
   int n_blocks = n/block_size;
   for(int iblock=0; iblock<n_blocks; iblock++){
-    for(int kblock=0; kblock<n_blocks; kblock++){
+    for(int jblock=0; jblock<n_blocks; jblock++){
       for(int i=iblock*block_size; i<(iblock+1)*block_size; i++){
-        for(int k=kblock*block_size; k<(kblock+1)*block_size; k++){
-          for(int j=0; j<n; j++){
+        for(int k=0; k<n; k++){
+          for(int j=jblock*block_size; j<(jblock + 1)*block_size; j++){
             c[i][j] += a[i][k] * b[k][j];
           }
         }
@@ -91,6 +91,21 @@ void mul_block(int n, int **a, int **b, int **c){
     }
   }
 }
+
+// void mul_block(int n, int **a, int **b, int **c){
+//   int i, j, k;
+//   int block_size = 100;
+//   int n_blocks = n/block_size;
+//   for(int kblock=0; kblock<n_blocks; kblock++){
+//       for(int i=0; i<n; i++){
+//         for(int k=kblock*block_size; k<(kblock+1)*block_size; k++){
+//           for(int j=0; j<n; j++){
+//             c[i][j] += a[i][k] * b[k][j];
+//           }
+//         }
+//       }
+//   }
+// }
 
 int main()
 {

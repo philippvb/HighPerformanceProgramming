@@ -1,10 +1,7 @@
 #include <math.h>
 #include <stdlib.h>
-// static inline void somecomputation(int i)__attribute__((always_inline));
+// static inline void somecomputation(int i);
 void somecomputation(int i){
-    // double j = sqrt(i);
-    // double k = i/j;
-    // double l = sqrt(k);
     double *arr;
     arr = malloc(100 * sizeof(double));
     for(int i = 0; i<100; i++){

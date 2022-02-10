@@ -1,13 +1,14 @@
 # custom
 
-settings.json
-
 # ignore all executables:
 *
 !/**/
 !*.*
 !makefile
 !Makefile
+
+# vscode settings
+settings.json
 
 # tar balls
 *.tar.gz
