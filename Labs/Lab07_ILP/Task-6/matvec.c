@@ -16,10 +16,15 @@ static double get_wall_seconds() {
 void matvec_autovec(double **mat_a,double *vec_b, double *vec_c,int SIZE)
 {
     int i, j;
+    double p;
 
     for (i = 0; i < SIZE; i++)
-                for (j = 0; j < SIZE; j++)
-                        vec_c[i] += mat_a[i][j] * vec_b[j];
+    {
+      p = 0;
+      for (j = 0; j < SIZE; j++)
+        p += mat_a[i][j] * vec_b[j];
+      vec_c[i] += p;
+    }
 }
 
 /* Don't change this */

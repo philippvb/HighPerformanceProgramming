@@ -1,0 +1,7 @@
+baseline time: 
+    auto-vec: 0.38
+- march native doesnt help
+- using intermediate variable doesnt help
+- mavx and mavx2 doesnt help
+- ffast math gives auto-vectorization boost to 0.26
+
