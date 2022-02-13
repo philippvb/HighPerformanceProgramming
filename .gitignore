@@ -28,6 +28,9 @@ settings.json
 # tmpdir
 tmpdir_for_checking/
 
+# data for assignment 3
+*.gal
+
 
 
 # standard gitignore c template
