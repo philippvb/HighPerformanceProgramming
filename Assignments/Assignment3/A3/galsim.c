@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #define PARTICLE_LENGTH 6
 #define EPSILON 10e-3
@@ -21,6 +22,14 @@ typedef struct particle
     double brightness;
 } particle;
 
+
+int write_doubes_to_file(particle* p, const char* fileName, int n_particles){
+    /* Open input file and determine its size. */
+    FILE* output_file = fopen(fileName, "wb");
+    fwrite(p, sizeof(char), PARTICLE_LENGTH * sizeof(double) * n_particles, output_file);
+    fclose(output_file);
+    return 0;
+}
 
 int read_doubles_from_file(particle** p, const char* fileName, int* n_particles) {
   /* Open input file and determine its size. */
@@ -102,17 +111,39 @@ particle compute_particle_update(particle* p, int n_particles, int cur_particle,
     return new_par;
 }
 
+void step(particle** p, int n_particles, double G){
+    particle* new_particles = malloc(n_particles * sizeof(particle));
+    for(int i=0; i<n_particles; i++){
+        new_particles[i] = compute_particle_update(*p, n_particles, i, G);
+    }
+    free(*p);
+    *p = new_particles;
+}
+
 
 int main(){
-    char* filename = "ref_output_data/ellipse_N_00010_after200steps.gal";
+    // char* filename= "circles_N_2.gal";
+    char* input_file = "input_data/ellipse_N_00010.gal";
+    char* output_file = "output_data/ellipse_N_00010.gal";
+    // strcat(input_file, filename);
+    // strcat(output_file, filename);
+    // printf("%s", strcat(input_file, filename));
     particle * p;
     int n_particles;
-    read_doubles_from_file(&p, filename, &n_particles);
+    int steps = 200;
+    read_doubles_from_file(&p, input_file, &n_particles);
     const int G = 100/n_particles;
     for(int i=0; i <n_particles; i++){
         print_particle(p[i]);
     }
     // printf("%f %f",compute_force(p, n_particles, 0, G).x, compute_force(p, n_particles, 0, G).y);
-    print_particle(compute_particle_update(p, n_particles, 0, G));
-    return 0;
+    // print_particle(compute_particle_update(p, n_particles, 0, G));
+    for(int s=0; s<steps; s++){
+        step(&p, n_particles, G);
+    }
+    for(int i=0; i <n_particles; i++){
+        print_particle(p[i]);
+    }
+    write_doubes_to_file(p, output_file, n_particles);
+    free(p);
 }
