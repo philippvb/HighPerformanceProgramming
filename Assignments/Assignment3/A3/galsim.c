@@ -3,9 +3,9 @@
 #include <math.h>
 #include <string.h>
 
-#define PARTICLE_LENGTH 6
-#define EPSILON 0.001
-#define TIMESTEP 0.00001
+const int particle_length = 6;
+const double epsilon = 0.001;
+double timestep;
 
 typedef struct coordinate
 {
@@ -26,7 +26,7 @@ typedef struct particle
 int write_doubes_to_file(particle* p, const char* fileName, int n_particles){
     /* Open input file and determine its size. */
     FILE* output_file = fopen(fileName, "wb");
-    fwrite(p, sizeof(char), PARTICLE_LENGTH * sizeof(double) * n_particles, output_file);
+    fwrite(p, sizeof(char), particle_length * sizeof(double) * n_particles, output_file);
     fclose(output_file);
     return 0;
 }
@@ -40,12 +40,12 @@ int read_doubles_from_file(particle** p, const char* fileName, int* n_particles)
   size_t fileSize = ftell(input_file);
   /* Now use fseek() again to set file position back to beginning of the file. */
   fseek(input_file, 0L, SEEK_SET);
-  *n_particles = fileSize/sizeof(double)/PARTICLE_LENGTH;
+  *n_particles = fileSize/sizeof(double)/particle_length;
   *p = malloc(*n_particles * sizeof(particle));
   /* Read contents of input_file into buffer. */
   size_t noOfItemsRead = 0;
   for(int i=0; i<*n_particles; i++){
-      noOfItemsRead += fread(*p + i, sizeof(char), PARTICLE_LENGTH * sizeof(double), input_file);
+      noOfItemsRead += fread(*p + i, sizeof(char), particle_length * sizeof(double), input_file);
   }
   if(noOfItemsRead != fileSize) {
     //printf("read_doubles_from_file error: failed to read file contents into buffer.\n");
@@ -87,8 +87,8 @@ coordinate compute_force(particle* p, int n_particles, int cur_particle, double 
         if(j != cur_particle){
         r = compute_dist(cur_par, p[j]);
         newforce = compute_direction(cur_par, p[j]);
-        force.x += newforce.x * p[j].mass / pow(r + EPSILON, 3);
-        force.y += newforce.y * p[j].mass / pow(r + EPSILON, 3);
+        force.x += newforce.x * p[j].mass / pow(r + epsilon, 3);
+        force.y += newforce.y * p[j].mass / pow(r + epsilon, 3);
         }
     }
     force.x *=-G*cur_par.mass;
@@ -102,10 +102,10 @@ particle compute_particle_update(particle* p, int n_particles, int cur_particle,
     coordinate a = compute_force(p, n_particles, cur_particle, G);
     a.x /= cur_par.mass;
     a.y /= cur_par.mass;
-    new_par.vel.x = cur_par.vel.x + TIMESTEP * a.x;
-    new_par.vel.y = cur_par.vel.y + TIMESTEP * a.y;
-    new_par.pos.x = cur_par.pos.x + TIMESTEP * new_par.vel.x;
-    new_par.pos.y = cur_par.pos.y + TIMESTEP * new_par.vel.y;
+    new_par.vel.x = cur_par.vel.x + timestep * a.x;
+    new_par.vel.y = cur_par.vel.y + timestep * a.y;
+    new_par.pos.x = cur_par.pos.x + timestep * new_par.vel.x;
+    new_par.pos.y = cur_par.pos.y + timestep * new_par.vel.y;
     new_par.mass = cur_par.mass;
     new_par.brightness = cur_par.brightness;
     return new_par;
@@ -122,19 +122,22 @@ void step(particle** p, int n_particles, double G){
 
 
 int main(int argc, char *argv[]){
-
-    //   int N = atoi(argv[1]);
-    // const char* fileName1 = argv[2];
-    // const char* fileName2 = argv[3];
-    // char* filename= "circles_N_2.gal";
-    char* input_file = "input_data/ellipse_N_00100.gal";
-    char* output_file = "output_data/ellipse_N_00100.gal";
-    // strcat(input_file, filename);
-    // strcat(output_file, filename);
-    // //printf("%s", strcat(input_file, filename));
+    if(argc != 6) {
+    printf("Give 5 input args: N filename n_steps delta_t graphics\n");
+    return -1;
+    }
+    int N = atoi(argv[1]);
+    const char* fileName = argv[2];
+    int steps = atoi(argv[3]);
+    timestep = atof(argv[4]);
+    int use_graphics = atoi(argv[5]); // don't use since they dont work
+    char input_file[100] = "input_data/";
+    char output_file[100] = "output_data/";
+    strcat(input_file, fileName);
+    strcat(output_file, fileName);
+    printf("Input file %s", input_file);
     particle * p;
     int n_particles;
-    int steps = 200;
     read_doubles_from_file(&p, input_file, &n_particles);
     const int G = 100/n_particles;
     for(int i=0; i <n_particles; i++){
