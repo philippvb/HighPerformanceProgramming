@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <sys/time.h>
 
 const int particle_length = 6;
 const double epsilon = 0.001;
@@ -21,6 +22,13 @@ typedef struct particle
     coordinate vel;
     double brightness;
 } particle;
+
+double get_wall_seconds(){
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  double seconds = tv.tv_sec + (double)tv.tv_usec/1000000;
+  return seconds;
+}
 
 
 int write_doubes_to_file(particle* p, const char* fileName, int n_particles){
@@ -139,9 +147,12 @@ int main(int argc, char *argv[]){
     int n_particles;
     read_doubles_from_file(&p, input_file, &n_particles);
     const int G = 100/n_particles;
+    double start = get_wall_seconds();
     for(int s=0; s<steps; s++){
         step(&p, n_particles, G);
     }
+    double end = get_wall_seconds();
+    printf("The execution took %f seconds\n", end-start);
     write_doubes_to_file(p, output_file, n_particles);
     free(p);
 }
