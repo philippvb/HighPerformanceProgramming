@@ -135,20 +135,12 @@ int main(int argc, char *argv[]){
     char output_file[100] = "output_data/";
     strcat(input_file, fileName);
     strcat(output_file, fileName);
-    printf("Input file %s", input_file);
     particle * p;
     int n_particles;
     read_doubles_from_file(&p, input_file, &n_particles);
     const int G = 100/n_particles;
-    for(int i=0; i <n_particles; i++){
-        print_particle(p[i]);
-    }
     for(int s=0; s<steps; s++){
         step(&p, n_particles, G);
-    }
-    printf("After\n");
-    for(int i=0; i <n_particles; i++){
-        print_particle(p[i]);
     }
     write_doubes_to_file(p, output_file, n_particles);
     free(p);
