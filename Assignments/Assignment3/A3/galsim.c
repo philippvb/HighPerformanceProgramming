@@ -111,26 +111,21 @@ coordinate compute_force(particle* p, int n_particles, int cur_particle, double 
     return force;
 }
 
-particle compute_particle_update(particle* p, int n_particles, int cur_particle, double G){
-    particle cur_par = p[cur_particle];
-    particle new_par;
-    coordinate a = compute_force(p, n_particles, cur_particle, G);
-    new_par.vel.x = cur_par.vel.x + timestep * a.x;
-    new_par.vel.y = cur_par.vel.y + timestep * a.y;
-    new_par.pos.x = cur_par.pos.x + timestep * new_par.vel.x;
-    new_par.pos.y = cur_par.pos.y + timestep * new_par.vel.y;
-    new_par.mass = cur_par.mass;
-    new_par.brightness = cur_par.brightness;
-    return new_par;
+
+void update_particle(particle* p, coordinate acc){
+    p->vel.x += timestep * acc.x;
+    p->vel.y += timestep * acc.y;
+    p->pos.x += timestep * p->vel.x;
+    p->pos.y += timestep * p->vel.y;
 }
 
-void step(particle** p, int n_particles, double G){
-    particle* new_particles = malloc(n_particles * sizeof(particle));
+void step(particle* p, coordinate* acc, int n_particles, double G){
     for(int i=0; i<n_particles; i++){
-        new_particles[i] = compute_particle_update(*p, n_particles, i, G);
+        acc[i] = compute_force(p, n_particles, i, G);
     }
-    free(*p);
-    *p = new_particles;
+    for(int i=0; i<n_particles; i++){
+        update_particle(p+i, acc[i]);
+    }
 }
 
 
@@ -148,16 +143,18 @@ int main(int argc, char *argv[]){
     char output_file[100] = "output_data/";
     strcat(input_file, fileName);
     strcat(output_file, fileName);
-    particle * p;
+    particle *p;
     int n_particles;
     read_doubles_from_file(&p, input_file, &n_particles);
+    coordinate *accelerations = malloc(sizeof(coordinate) * n_particles);
     const int G = 100/n_particles;
     double start = get_wall_seconds();
     for(int s=0; s<steps; s++){
-        step(&p, n_particles, G);
+        step(p, accelerations, n_particles, G);
     }
     double end = get_wall_seconds();
     printf("The execution took %f seconds\n", end-start);
     write_doubes_to_file(p, output_file, n_particles);
     free(p);
+    free(accelerations);
 }
