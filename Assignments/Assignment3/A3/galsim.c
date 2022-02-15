@@ -4,7 +4,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-const int particle_length = 6;
+const int body_length = 6;
 const double epsilon = 0.001;
 double timestep;
 
@@ -15,13 +15,13 @@ typedef struct coordinate
 } coordinate;
 
 
-typedef struct particle
+typedef struct body
 {
     coordinate pos;
     double mass;
     coordinate vel;
     double brightness;
-} particle;
+} body;
 
 double get_wall_seconds(){
   struct timeval tv;
@@ -31,15 +31,15 @@ double get_wall_seconds(){
 }
 
 
-int write_doubes_to_file(particle* p, const char* fileName, int n_particles){
+int write_doubles_to_file(body* p, const char* fileName, int n_bodies){
     /* Open input file and determine its size. */
     FILE* output_file = fopen(fileName, "wb");
-    fwrite(p, sizeof(char), particle_length * sizeof(double) * n_particles, output_file);
+    fwrite(p, sizeof(char), body_length * sizeof(double) * n_bodies, output_file);
     fclose(output_file);
     return 0;
 }
 
-int read_doubles_from_file(particle** p, const char* fileName, int* n_particles) {
+int read_doubles_from_file(body** p, const char* fileName, int n_bodies) {
   /* Open input file and determine its size. */
   FILE* input_file = fopen(fileName, "rb");
 
@@ -48,12 +48,15 @@ int read_doubles_from_file(particle** p, const char* fileName, int* n_particles)
   size_t fileSize = ftell(input_file);
   /* Now use fseek() again to set file position back to beginning of the file. */
   fseek(input_file, 0L, SEEK_SET);
-  *n_particles = fileSize/sizeof(double)/particle_length;
-  *p = malloc(*n_particles * sizeof(particle));
+  if (n_bodies != fileSize/sizeof(double)/body_length){
+    printf("read_doubles_from_file error: size of input file '%s' does not match the given n.\n", fileName);
+    printf("For n = %d the file size is expected to be (n * sizeof(double) * 6) = %lu but the actual file size is %lu.\n", n_bodies, n_bodies * sizeof(double) * body_length, fileSize);
+  }
+  *p = malloc(n_bodies * sizeof(body));
   /* Read contents of input_file into buffer. */
   size_t noOfItemsRead = 0;
-  for(int i=0; i<*n_particles; i++){
-      noOfItemsRead += fread(*p + i, sizeof(char), particle_length * sizeof(double), input_file);
+  for(int i=0; i<n_bodies; i++){
+      noOfItemsRead += fread(*p + i, sizeof(char), body_length * sizeof(double), input_file);
   }
   if(noOfItemsRead != fileSize) {
     //printf("read_doubles_from_file error: failed to read file contents into buffer.\n");
@@ -68,43 +71,43 @@ int read_doubles_from_file(particle** p, const char* fileName, int* n_particles)
   return 0;
 }
 
-void print_particle(particle p){
+void print_body(body p){
     printf("Pos X: %f, Pos Y; %f, Mass: %f, Vel X: %f, Vel Y: %f, Brightness: %f\n", p.pos.x, p.pos.y, p.mass, p.vel.x, p.vel.y, p.brightness);
 }
 
 
-double compute_dist(particle a, particle b){
-    return sqrt(pow(a.pos.x - b.pos.x, 2) + pow(a.pos.y - b.pos.y, 2));
+double norm(coordinate a){
+    return sqrt(a.x * a.x + a.y * a.y);
 }
 
-coordinate compute_direction(particle a, particle b){
+coordinate compute_direction(body a, body b){
     coordinate dir;
     dir.x = (a.pos.x - b.pos.x);
     dir.y = (a.pos.y - b.pos.y);
     return dir;
 }
 
-coordinate compute_force(particle* p, int n_particles, int cur_particle, double G){
+coordinate compute_force(body* p, int n_bodies, int cur_body_index, double G){
     coordinate force;
     force.x = 0;
     force.y = 0;
     double r_cube;
-    coordinate newforce;
-    particle cur_par = p[cur_particle];
-    for(int j=0; j<cur_particle; j++){
-        r_cube = compute_dist(cur_par, p[j]) + epsilon;
+    coordinate direction;
+    body cur_body = p[cur_body_index];
+    for(int j=0; j<cur_body_index; j++){
+        direction = compute_direction(cur_body, p[j]);
+        r_cube = norm(direction) + epsilon;
         r_cube = r_cube * r_cube * r_cube;
-        newforce = compute_direction(cur_par, p[j]);
-        force.x += newforce.x * p[j].mass / r_cube;
-        force.y += newforce.y * p[j].mass / r_cube;
+        force.x += direction.x * p[j].mass / r_cube;
+        force.y += direction.y * p[j].mass / r_cube;
         
     }
-    for(int j=cur_particle; j<n_particles; j++){
-        r_cube = compute_dist(cur_par, p[j]) + epsilon;
+    for(int j=cur_body_index; j<n_bodies; j++){
+        direction = compute_direction(cur_body, p[j]);
+        r_cube = norm(direction) + epsilon;
         r_cube = r_cube * r_cube * r_cube;
-        newforce = compute_direction(cur_par, p[j]);
-        force.x += newforce.x * p[j].mass / r_cube;
-        force.y += newforce.y * p[j].mass / r_cube; 
+        force.x += direction.x * p[j].mass / r_cube;
+        force.y += direction.y * p[j].mass / r_cube; 
     }
     force.x *=-G;
     force.y *=-G;
@@ -112,18 +115,18 @@ coordinate compute_force(particle* p, int n_particles, int cur_particle, double 
 }
 
 
-void update_particle(particle* p, coordinate acc){
+void update_particle(body* p, coordinate acc){
     p->vel.x += timestep * acc.x;
     p->vel.y += timestep * acc.y;
     p->pos.x += timestep * p->vel.x;
     p->pos.y += timestep * p->vel.y;
 }
 
-void step(particle* p, coordinate* acc, int n_particles, double G){
-    for(int i=0; i<n_particles; i++){
-        acc[i] = compute_force(p, n_particles, i, G);
+void step(body* p, coordinate* acc, int n_bodies, double G){
+    for(int i=0; i<n_bodies; i++){
+        acc[i] = compute_force(p, n_bodies, i, G);
     }
-    for(int i=0; i<n_particles; i++){
+    for(int i=0; i<n_bodies; i++){
         update_particle(p+i, acc[i]);
     }
 }
@@ -134,7 +137,7 @@ int main(int argc, char *argv[]){
     printf("Give 5 input args: N filename n_steps delta_t graphics\n");
     return -1;
     }
-    int N = atoi(argv[1]);
+    int n_bodies = atoi(argv[1]);
     const char* fileName = argv[2];
     int steps = atoi(argv[3]);
     timestep = atof(argv[4]);
@@ -143,18 +146,17 @@ int main(int argc, char *argv[]){
     char output_file[100] = "output_data/";
     strcat(input_file, fileName);
     strcat(output_file, fileName);
-    particle *p;
-    int n_particles;
-    read_doubles_from_file(&p, input_file, &n_particles);
-    coordinate *accelerations = malloc(sizeof(coordinate) * n_particles);
-    const int G = 100/n_particles;
+    body *p;
+    read_doubles_from_file(&p, input_file, n_bodies);
+    coordinate *accelerations = malloc(sizeof(coordinate) * n_bodies);
+    const int G = 100/n_bodies;
     double start = get_wall_seconds();
     for(int s=0; s<steps; s++){
-        step(p, accelerations, n_particles, G);
+        step(p, accelerations, n_bodies, G);
     }
     double end = get_wall_seconds();
     printf("The execution took %f seconds\n", end-start);
-    write_doubes_to_file(p, output_file, n_particles);
+    write_doubles_to_file(p, output_file, n_bodies);
     free(p);
     free(accelerations);
 }
