@@ -1,0 +1,227 @@
+\documentclass[a4paper]{scrartcl}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{pgfplots}
+\usepackage{amsmath, enumerate, amssymb, multirow, fancyhdr, color, graphicx, lastpage, listings, tikz, pdflscape, subfigure, float, polynom, hyperref, tabularx, forloop, geometry, listings, fancybox, tikz, forest, tabstackengine, cancel}
+\input kvmacros
+\geometry{a4paper,left=3cm, right=3cm, top=3cm, bottom=3cm}
+\pagestyle{fancy}
+\title{Assignment 3, Philipp Noel von Bachmann}
+
+
+\begin{document}
+\maketitle
+
+\section{Problem}
+    In the N-body Problem, we want to predict the movement of n bodies that
+    interact with each other over time. The interaction is given by the force
+    they excert on each other, which in turn changes the acceleration of each
+    body, thus the velocity and position. The problem is modeled by assuming
+    pairwise interaction between the bodies and taking their sum as the total
+    force excerted onto each body.
+
+\section{Solution}
+    \subsection{Data structure}
+        In general, we have the following 4 characteristics of each body:
+        \begin{itemize}
+            \item velocity
+            \item position
+            \item mass
+            \item brightness
+        \end{itemize}
+        Mass and brightness are represented as double, since they are both
+        continuous. As position and velocity are both vectors, they are
+        represented as a struct of coordinates. Since we model the problem in
+        2D, each vector thus comprises of an x and y coordinate. The
+        characteristics are collected in a struct called body. This format
+        also allows for easy reading of the input gal file, since we can
+        directly read each block into a body struct.
+
+        In later parts \ref{sec:mem_usage}, we also keep track of the
+        accelerations of each body in an array of coordinates. We opt not to
+        integrate this into the body struct to be able to retain easy writing
+        and reading of files.
+
+    \subsection{Structure}
+        The baseline code consists of the following modules/functions:
+        \begin{itemize}
+            \item utility functions for coordinates: compute direction and compute norm 
+            \item compute force: computes the force that acts onto a body
+            \item compute body update: computes the update step for each body
+            \item step: handles the update step, calls the subroutines. Only this function actually changes the state of our bodys.
+        \end{itemize}
+
+        In the final code, we restructured it to the following, see mostly section \ref{sec:mem_usage} for details.
+        \begin{itemize}
+            \item utility functions for coordinates: compute direction and compute norm 
+            \item compute acceleration: computes the acceleration that acts onto a body
+            \item update body: computes the update step for each body and applies it
+            \item step: calls the subroutines and iterates over all bodys
+        \end{itemize}
+
+
+\section{Performance and Discussion}
+
+    \subsection{Hardware information}
+        \begin{itemize}
+            \item CPU: Apple M1 with 4 performance cores and 4 efficiency cores
+            \item GPU: Apple M1 8 core.
+            \item Compiler: Slang, Version 13.0.0
+        \end{itemize}
+
+    \subsection{Performance Measurement script}
+        The performance was measured with a simple shell script to enable
+        reproducability. In the script we vary the number of bodies. In the end
+        we also check that the code is correct with the compare\_gals file. Our
+        time measurement was done within the code with the help of the time
+        \textbf{timeoftheday} function. We only started the time measurement
+        after reading the data from the input file and stopped the measurement
+        before writing the data to the output file.
+
+    \subsection{Optimization and Results}
+        \subsubsection{Baseline}
+            \noindent\begin{tabular}{c|c|c|c}
+                steps & 10 & 100 & 1000 \\
+                \hline
+                time (s) & 0.007 & 0.065 & 0.648\\
+            \end{tabular}
+
+            \noindent\begin{tabular}{c|c|c|c|c}
+                bodies & 10 & 100 & 500 & 1000 \\
+                \hline
+                time (s) & 0.003 & 0.065 & 1.615 & 6.502\\
+            \end{tabular}
+            
+            Here, we see that our computation time scales linearly with the
+            number of steps, which we would expect since steps are in an outer
+            loop. In comparison, we see that the number of bodies doesn't scale
+            linearly with time. This makes sense since our naive algorithm has complexity $O(n^2)$.
+
+        \subsection{Using optimizer flags}
+        \begin{itemize}
+            \item -O2
+                \noindent\begin{tabular}{c|c|c|c|c}
+                    bodies & 10 & 100 & 500 & 1000 \\
+                    \hline
+                    time (s) & 0.000 & 0.012 & 0.291 & 1.164\\
+                \end{tabular}
+            \item -O3
+                \noindent\begin{tabular}{c|c|c|c|c}\label{tab:baseO3}
+                    bodies & 10 & 100 & 500 & 1000 \\
+                    \hline
+                    time (s) & 0.001 & 0.012 & 0.290 & 1.163\\
+                \end{tabular}
+            \item -03 -ffast-math
+                \noindent\begin{tabular}{c|c|c|c|c}
+                    bodies & 10 & 100 & 500 & 1000 \\
+                    \hline
+                    time (s) & 0.000 & 0.002 & 0.037 & 0.146\\
+                \end{tabular}
+        \end{itemize}
+
+        We can see that by enabling optimization flags, we can improve the
+        performace of our code significantly. If we test our problem on
+        ellipse\_N\_00100\_after200steps.gal, even enabling ffast-math does not
+        change the correctness of the result. Since we might loose precision in
+        general through that however, we opt to only use -O3 in all further
+        optimizations.
+
+
+        \subsection{Optimizing Instructions}
+            We can make the following small optimizations:
+            \begin{itemize}
+                \item Remove division by $m_i$ for $a_i$ by also removing it in $F_i$, however this doesn't change the computation time.
+                \item Give inline hint to our vector utility function like norm, however no improvement since compiler does it probably by itself.
+            \end{itemize}
+
+            We can reduce the time of computing $r^3$ by explicitly writing it
+            out instead of using the \textbf{pow} function. This leads to a big improvement:
+            \newline
+            \noindent\begin{tabular}{c|c|c|c|c}
+                bodies & 10 & 100 & 500 & 1000 \\
+                \hline
+                time (s) & 0.000 & 0.002 & 0.038 & 0.151\\
+            \end{tabular}
+
+
+        \subsection{Memory optimization}
+            \subsubsection{Reducing memory usage}\label{sec:mem_usage}
+                Instead of creating a new array of bodies for each timestep, we
+                can also update our bodies in place. This however means that we
+                need to restructure our code such that we first compute all
+                accelerations, and then updating them. Surprisingly this doesn't
+                lead to a big performance improvement, our time reduced to 0.149
+                for 1000 bodys which is just 2 ms. One of the reasons could be
+                that while we create fever objects, we need to split our update
+                loop in two on order to first compute all accelerations and then
+                compute all body updates.
+
+            \subsubsection{Optimizing cache usage}\label{sec:cache_blocking}
+                We can see in the formula for force
+                \begin{equation}\label{for:force}
+                    F_i = -Gm_i \sum_{j\neq i} \frac{m_j}{r^2_{ij}}\hat{r}_ij
+                \end{equation}
+                that we our sum goes over all $j$. If we have a very big number
+                of bodies, the first body in the cache will be replaced by the
+                time we come to the end of the sum. Thus if we want to acces the
+                first body in the next iteration again, we need to re-read this
+                line. Instead, we can also compute the sum block-wise over all
+                $j$s. However this reformatting doesn't lead to an improvement,
+                instead it slows down for smaller block sizes. One reason could
+                be that by adding blocks we added more for loops which make it
+                harder for the compiler to optimize the code.
+
+        \subsection{Instruction Level Parallelism}
+            We can get rid of the if $i \neq j$  statement in the $F_i$ \ref{for:force}
+            computation loop by dividing the loop up. This leads to a minor
+            improvement of 0.006s for 1000 bodies.
+        
+        \subsection{Final code time measurement}
+            In the end, we ended up with a code that included all optimizations
+            except of \ref{sec:cache_blocking}. This lead to the following
+            performance:
+
+            \begin{tikzpicture}
+ 
+                \begin{axis}[
+                    xmin = 10, xmax = 10000,
+                    ymin = 0, ymax = 15.0,
+                    xtick distance = 1000,
+                    ytick distance = 1,
+                    grid = both,
+                    minor tick num = 1,
+                    major grid style = {lightgray},
+                    minor grid style = {lightgray!25},
+                    width = 0.8\textwidth,
+                    height = 0.8\textwidth,
+                    xlabel = {Number of bodies},
+                    ylabel = {Time (s)},]
+                 
+                 
+                % Plot data from a file
+                \addplot[
+                    scatter,
+                    thin,
+                    red,
+                    dashed
+                ] file[skip first] {results.dat};
+                 
+                \end{axis}
+                 
+            \end{tikzpicture}
+
+            We can clearly see that this curve resembles an polynomial
+            increasing cost, $O(n^2)$.
+        
+
+
+\section{References}
+    \begin{itemize}
+        \item For the timing, the \textbf{get\_wall\_seconds} from Lab06, exercise 7
+        \item For data reading, the function \textbf{read\_doubles\_from\_file} from \textbf{compare\_gal\_files}, but slightly modified
+    \end{itemize}
+
+
+
+\end{document}
+
