@@ -88,19 +88,26 @@ coordinate compute_force(particle* p, int n_particles, int cur_particle, double 
     coordinate force;
     force.x = 0;
     force.y = 0;
-    double r;
+    double r_cube;
     coordinate newforce;
     particle cur_par = p[cur_particle];
-    for(int j=0; j<n_particles; j++){
-        if(j != cur_particle){
-        r = compute_dist(cur_par, p[j]);
+    for(int j=0; j<cur_particle; j++){
+        r_cube = compute_dist(cur_par, p[j]) + epsilon;
+        r_cube = r_cube * r_cube * r_cube;
         newforce = compute_direction(cur_par, p[j]);
-        force.x += newforce.x * p[j].mass / pow(r + epsilon, 3);
-        force.y += newforce.y * p[j].mass / pow(r + epsilon, 3);
-        }
+        force.x += newforce.x * p[j].mass / r_cube;
+        force.y += newforce.y * p[j].mass / r_cube;
+        
     }
-    force.x *=-G*cur_par.mass;
-    force.y *=-G*cur_par.mass;
+    for(int j=cur_particle; j<n_particles; j++){
+        r_cube = compute_dist(cur_par, p[j]) + epsilon;
+        r_cube = r_cube * r_cube * r_cube;
+        newforce = compute_direction(cur_par, p[j]);
+        force.x += newforce.x * p[j].mass / r_cube;
+        force.y += newforce.y * p[j].mass / r_cube; 
+    }
+    force.x *=-G;
+    force.y *=-G;
     return force;
 }
 
@@ -108,8 +115,6 @@ particle compute_particle_update(particle* p, int n_particles, int cur_particle,
     particle cur_par = p[cur_particle];
     particle new_par;
     coordinate a = compute_force(p, n_particles, cur_particle, G);
-    a.x /= cur_par.mass;
-    a.y /= cur_par.mass;
     new_par.vel.x = cur_par.vel.x + timestep * a.x;
     new_par.vel.y = cur_par.vel.y + timestep * a.y;
     new_par.pos.x = cur_par.pos.x + timestep * new_par.vel.x;
