@@ -4,8 +4,8 @@
 #include <string.h>
 
 #define PARTICLE_LENGTH 6
-#define EPSILON 10e-3
-#define TIMESTEP 10e-5
+#define EPSILON 0.001
+#define TIMESTEP 0.00001
 
 typedef struct coordinate
 {
@@ -48,13 +48,13 @@ int read_doubles_from_file(particle** p, const char* fileName, int* n_particles)
       noOfItemsRead += fread(*p + i, sizeof(char), PARTICLE_LENGTH * sizeof(double), input_file);
   }
   if(noOfItemsRead != fileSize) {
-    printf("read_doubles_from_file error: failed to read file contents into buffer.\n");
+    //printf("read_doubles_from_file error: failed to read file contents into buffer.\n");
     return -1;
   }
   /* OK, now we have the file contents in the buffer.
      Since we are finished with the input file, we can close it now. */
   if(fclose(input_file) != 0) {
-    printf("read_doubles_from_file error: error closing input file.\n");
+    //printf("read_doubles_from_file error: error closing input file.\n");
     return -1;
   }
   return 0;
@@ -64,17 +64,15 @@ void print_particle(particle p){
     printf("Pos X: %f, Pos Y; %f, Mass: %f, Vel X: %f, Vel Y: %f, Brightness: %f\n", p.pos.x, p.pos.y, p.mass, p.vel.x, p.vel.y, p.brightness);
 }
 
-// void step(particle** p){
 
-// }
-double compute_square_dist(particle a, particle b){
-    return pow(a.pos.x - b.pos.x, 2) + pow(a.pos.y - b.pos.y, 2) + EPSILON;
+double compute_dist(particle a, particle b){
+    return sqrt(pow(a.pos.x - b.pos.x, 2) + pow(a.pos.y - b.pos.y, 2));
 }
 
-coordinate compute_direction(particle a, particle b, double scaling){
+coordinate compute_direction(particle a, particle b){
     coordinate dir;
-    dir.x = (a.pos.x - b.pos.x)/scaling;
-    dir.y = (a.pos.y - b.pos.y)/scaling;
+    dir.x = (a.pos.x - b.pos.x);
+    dir.y = (a.pos.y - b.pos.y);
     return dir;
 }
 
@@ -82,14 +80,16 @@ coordinate compute_force(particle* p, int n_particles, int cur_particle, double 
     coordinate force;
     force.x = 0;
     force.y = 0;
-    double scaling;
+    double r;
     coordinate newforce;
     particle cur_par = p[cur_particle];
-    for(int i=0; i<n_particles; i++){
-        scaling = compute_square_dist(cur_par, p[i]);
-        newforce = compute_direction(cur_par, p[i], scaling);
-        force.x += p[i].mass / scaling * newforce.x;
-        force.y += p[i].mass / scaling * newforce.y;
+    for(int j=0; j<n_particles; j++){
+        if(j != cur_particle){
+        r = compute_dist(cur_par, p[j]);
+        newforce = compute_direction(cur_par, p[j]);
+        force.x += newforce.x * p[j].mass / pow(r + EPSILON, 3);
+        force.y += newforce.y * p[j].mass / pow(r + EPSILON, 3);
+        }
     }
     force.x *=-G*cur_par.mass;
     force.y *=-G*cur_par.mass;
@@ -121,13 +121,17 @@ void step(particle** p, int n_particles, double G){
 }
 
 
-int main(){
+int main(int argc, char *argv[]){
+
+    //   int N = atoi(argv[1]);
+    // const char* fileName1 = argv[2];
+    // const char* fileName2 = argv[3];
     // char* filename= "circles_N_2.gal";
-    char* input_file = "input_data/ellipse_N_00010.gal";
-    char* output_file = "output_data/ellipse_N_00010.gal";
+    char* input_file = "input_data/ellipse_N_00100.gal";
+    char* output_file = "output_data/ellipse_N_00100.gal";
     // strcat(input_file, filename);
     // strcat(output_file, filename);
-    // printf("%s", strcat(input_file, filename));
+    // //printf("%s", strcat(input_file, filename));
     particle * p;
     int n_particles;
     int steps = 200;
@@ -136,11 +140,10 @@ int main(){
     for(int i=0; i <n_particles; i++){
         print_particle(p[i]);
     }
-    // printf("%f %f",compute_force(p, n_particles, 0, G).x, compute_force(p, n_particles, 0, G).y);
-    // print_particle(compute_particle_update(p, n_particles, 0, G));
     for(int s=0; s<steps; s++){
         step(&p, n_particles, G);
     }
+    printf("After\n");
     for(int i=0; i <n_particles; i++){
         print_particle(p[i]);
     }
