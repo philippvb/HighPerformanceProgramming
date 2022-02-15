@@ -115,7 +115,7 @@ coordinate compute_force(body* p, int n_bodies, int cur_body_index, double G){
 }
 
 
-void update_particle(body* p, coordinate acc){
+void update_body(body* p, coordinate acc){
     p->vel.x += timestep * acc.x;
     p->vel.y += timestep * acc.y;
     p->pos.x += timestep * p->vel.x;
@@ -127,7 +127,7 @@ void step(body* p, coordinate* acc, int n_bodies, double G){
         acc[i] = compute_force(p, n_bodies, i, G);
     }
     for(int i=0; i<n_bodies; i++){
-        update_particle(p+i, acc[i]);
+        update_body(p+i, acc[i]);
     }
 }
 
@@ -139,15 +139,12 @@ int main(int argc, char *argv[]){
     }
     int n_bodies = atoi(argv[1]);
     const char* fileName = argv[2];
+    const char* output_file = "result.gal";
     int steps = atoi(argv[3]);
     timestep = atof(argv[4]);
     int use_graphics = atoi(argv[5]); // don't use since they dont work
-    char input_file[100] = "input_data/";
-    char output_file[100] = "output_data/";
-    strcat(input_file, fileName);
-    strcat(output_file, fileName);
     body *p;
-    read_doubles_from_file(&p, input_file, n_bodies);
+    read_doubles_from_file(&p, fileName, n_bodies);
     coordinate *accelerations = malloc(sizeof(coordinate) * n_bodies);
     const int G = 100/n_bodies;
     double start = get_wall_seconds();
