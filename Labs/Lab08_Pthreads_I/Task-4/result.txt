@@ -1,0 +1,1 @@
+time goes down from 0.30 to 0.22 (halfsplit) and even further for 2/3 split 0.17
