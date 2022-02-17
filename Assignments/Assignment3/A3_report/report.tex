@@ -72,11 +72,11 @@
     \subsection{Performance Measurement script}
         The performance was measured with a simple shell script to enable
         reproducability. In the script we vary the number of bodies. In the end
-        we also check that the code is correct with the compare\_gals file. Our
+        we also check that the code is correct with the \textbf{compare\_gals} file. Our
         time measurement was done within the code with the help of the time
         \textbf{timeoftheday} function. We only started the time measurement
-        after reading the data from the input file and stopped the measurement
-        before writing the data to the output file.
+        immediatly before calling the step loop and stopped the measurement
+        directly after the loop.
 
     \subsection{Optimization and Results}
         \subsubsection{Baseline}
@@ -123,7 +123,7 @@
         performace of our code significantly. If we test our problem on
         ellipse\_N\_00100\_after200steps.gal, even enabling ffast-math does not
         change the correctness of the result. Since we might loose precision in
-        general through that however, we opt to only use -O3 in all further
+        general however, we opt to only use -O3 in all further
         optimizations.
 
 

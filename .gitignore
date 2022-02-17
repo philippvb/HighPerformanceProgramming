@@ -87,3 +87,21 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+
+# Latex
+## Core latex/pdflatex auxiliary files:
+*synctex.gz
+*.fdb_latexmk
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+*.fmt
+*.fot
+*.cb
+*.cb2
+.*.lb
