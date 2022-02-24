@@ -4,6 +4,7 @@
 int DoItNow = 0;
 
 pthread_mutex_t m;
+pthread_cond_t cond;
 
 void* thread_func(void* arg) {
   printf("This is thread_func() starting, now entering loop to wait until DoWorkNow is set...\n");
@@ -13,6 +14,8 @@ void* thread_func(void* arg) {
     pthread_mutex_lock(&m);
     if(DoItNow == 1)
       shouldBreakLoop = 1;
+    else
+    pthread_cond_wait(&cond, &m); // if DoItNow is 0, wait
     pthread_mutex_unlock(&m);
     if(shouldBreakLoop == 1)
       break;
@@ -25,6 +28,7 @@ int main() {
   printf("This is the main() function starting.\n");
 
   pthread_mutex_init(&m, NULL);
+  pthread_cond_init(&cond, NULL);
 
   /* Start thread. */
   pthread_t thread;
@@ -42,6 +46,7 @@ int main() {
   pthread_mutex_lock(&m);
   DoItNow = 1;
   pthread_mutex_unlock(&m);
+  // pthread_cond_signal(&cond);
   
   /* Wait for thread to finish. */
   printf("the main() function now calling pthread_join().\n");

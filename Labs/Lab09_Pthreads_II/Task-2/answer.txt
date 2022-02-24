@@ -1,0 +1,6 @@
+- we see that if we remove doitnow, then the code never ends since the second
+thread is stuck in an inifinte loop waiting for the rest to complete
+- we see the expected 200% cpu and it takes 22.5s to run
+
+- as expected with the condition, we only need 100% cpu and time says 11.27s total, which makes sense since we only use one thread so no time from the second one gets added
+- if we remove the signal, our code will never stop since our second thread will always wait for the condition

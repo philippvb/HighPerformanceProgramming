@@ -3,19 +3,42 @@
  *
  **********************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+#define NUM_THREADS 10
+
+const int intervals = 500000000;
+double dx  = 1.0/intervals;
+
+void* compute_interval(void* d){
+  int* data = (int *) d;
+  double* thread_sum_p = malloc(sizeof(double));
+  double x;
+  for(int i=data[0]; i<data[1]; i++){
+    x = dx*(i - 0.5);
+    *thread_sum_p += dx*4.0/(1.0 + x*x);
+  }
+  return thread_sum_p;
+}
 
 int main(int argc, char *argv[]) {
 
-  int i;
-  const int intervals = 500000000;
-  double sum, dx, x;
+  double sum = 0.0;
+  pthread_t threads[NUM_THREADS];
+  const int block_size = intervals/NUM_THREADS;
+  int data[2*NUM_THREADS];
+  for(int i=0; i<NUM_THREADS; i++){
+    data[i] = block_size*i;
+    data[i+1] = block_size*(i+1);
+    pthread_create(&threads[i], NULL, compute_interval, data+i);
+  }
 
-  dx  = 1.0/intervals;
-  sum = 0.0;
-
-  for (i = 1; i <= intervals; i++) { 
-    x = dx*(i - 0.5);
-    sum += dx*4.0/(1.0 + x*x);
+  for(int i=0; i<NUM_THREADS; i++){
+    void* intermediate;
+    pthread_join(threads[i], &intermediate);
+    sum+= ((double * ) intermediate)[0];
+    free((double * ) intermediate);
   }
 
   printf("PI is approx. %.16f\n",  sum);

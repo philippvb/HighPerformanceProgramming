@@ -1,0 +1,2 @@
+- complexity: O(n^2) since we have to iterate over all elements
+- if we parallelize still stays the same since just reduced by a constant

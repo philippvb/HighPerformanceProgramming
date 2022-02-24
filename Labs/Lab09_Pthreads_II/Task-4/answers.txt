@@ -1,0 +1,6 @@
+- if we remove the barrier, then all threads would just run immedilaty, thus the first could complete before the last even started
+
+- when compiling it with O3, the programm hangs up in the bye spot after the first thread says bye
+- the problem probably arises because the compiler optimizes the empty loop away, so we need to add a volatile to the state variable
+- we can see this in the assembly, since the comparison doesnt happen in the loop if we use -O3
+- if we use volatilem the comparison comes back in

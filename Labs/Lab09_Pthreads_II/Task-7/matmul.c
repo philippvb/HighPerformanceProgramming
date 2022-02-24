@@ -3,6 +3,9 @@
 #include <math.h>
 #include <string.h>
 #include <sys/time.h>
+#include <pthread.h>
+
+#define NUM_THREADS 25
 
 static double get_wall_seconds() {
   struct timeval tv;
@@ -13,6 +16,34 @@ static double get_wall_seconds() {
 
 double **A,**B,**C;
 int n;
+
+
+void matmul(int row, int col){
+  double sum=0.0;
+  for(int i=0; i<n; i++){
+    sum+=A[row][i] * B[i][col];
+  }
+  C[row][col] = sum;
+}
+typedef struct threaddata
+{
+  int i_start;
+  int j_start;
+  int i_end;
+  int j_end;
+} threaddata;
+
+void* matmul_loop(void *args){
+  threaddata* data = (threaddata*) args;
+  for(int i=data->i_start; i<data->i_end; i++){
+    for(int j=data->j_start; j<data->j_end; j++){
+      matmul(i, j);
+    }
+  }
+  return NULL;
+}
+
+
 
 int main(int argc, char *argv[]) {
   int i, j, k;
@@ -44,11 +75,24 @@ int main(int argc, char *argv[]) {
   printf("Doing matrix-matrix multiplication...\n");
   double startTime = get_wall_seconds();
 
-  // Multiply C=A*B
-  for(i=0; i<n; i++)
-    for (j=0; j<n; j++)
-      for (k=0; k<n; k++)
-	C[i][j] += A[i][k] * B[k][j];
+  pthread_t threads[NUM_THREADS];
+  threaddata threads_data[NUM_THREADS];
+  int block_size = n/sqrt(NUM_THREADS);
+  int cur_thread = 0;
+  for(int i=0; i<n; i+=block_size){
+    for(int j=0; j<n; j+=block_size){
+      threads_data[cur_thread].i_start = i;
+      threads_data[cur_thread].i_end = i + block_size;
+      threads_data[cur_thread].j_start = j;
+      threads_data[cur_thread].j_end = j + block_size;
+      pthread_create(&threads[cur_thread], NULL, matmul_loop, (void *) &threads_data[cur_thread]);
+      cur_thread++;
+    }
+  }
+
+  for(int t = 0; t<NUM_THREADS; t++){
+    pthread_join(threads[t], NULL);
+  }
 
   double timeTaken = get_wall_seconds() - startTime;
   printf("Elapsed time: %f wall seconds\n", timeTaken);

@@ -1,9 +1,12 @@
 #include <stdio.h>
 #include <pthread.h>
+#include <stdlib.h>
 
 void* the_thread_func(void* arg) {
-  /* Do something here? */
-  return NULL;
+  int* p = malloc(sizeof(int));
+  p[0] = 1234;
+  pthread_exit(p);
+  // return p;
 }
 
 int main() {
@@ -20,13 +23,16 @@ int main() {
   printf("This is the main() function after pthread_create()\n");
 
   /* Do something here? */
+  void* thread_return;
 
   /* Wait for thread to finish. */
   printf("the main() function now calling pthread_join().\n");
-  if(pthread_join(thread, NULL) != 0) {
+  if(pthread_join(thread, &thread_return) != 0) {
     printf("ERROR: pthread_join failed.\n");
     return -1;
   }
+  printf("Data from thread malloc %d\n",((int *) thread_return)[0]);
+  free((int *) thread_return);
 
   return 0;
 }
