@@ -58,6 +58,7 @@ int main(int argc, char *argv[]){
     // printf("%d\n", tree.children[i].body != NULL);
     // }
     // // printf("%f, %f\n", tree.children[0].body->pos.x, tree.children[0].body->pos.y);
+    update_mass(&tree);
     print_tree(tree, 0);
     // printf("%f", tree.children[0].children[0].body->pos.x);
 

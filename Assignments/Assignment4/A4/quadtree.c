@@ -17,6 +17,30 @@ node_t create_node(float lx, float ux, float ly, float uy){
     return new_node;
 }
 
+void update_mass(node_t *cur_node){
+    // check if we have child nodes
+    if(cur_node->children == NULL){
+        // if we have a body, our center of mass is simply the centre of the body and our total mass is the mass
+        if(cur_node->body != NULL){
+            cur_node->center_of_mass = cur_node->body->pos;
+            cur_node->total_mass = cur_node->body->mass;
+        }
+    }
+    else{
+        cur_node->total_mass = 0;
+        cur_node->center_of_mass.x = 0;
+        cur_node->center_of_mass.y = 0;
+        for(int i=0; i<SUBDIVISIONS*SUBDIVISIONS; i++){
+            update_mass(cur_node->children + i);
+            cur_node->total_mass += cur_node->children[i].total_mass;
+            cur_node->center_of_mass.x += cur_node->children[i].total_mass * cur_node->children[i].center_of_mass.x;
+            cur_node->center_of_mass.y += cur_node->children[i].total_mass * cur_node->children[i].center_of_mass.y;
+        }
+        cur_node->center_of_mass.x /= cur_node->total_mass;
+        cur_node->center_of_mass.y /= cur_node->total_mass;
+    }
+}
+
 void insert_body(node_t *cur_node, body_t *new_body){
     // printf("Inserting body (%f, %f) into node (%f, %f)\n", new_body->pos.x, new_body->pos.y, cur_node->lower.x, cur_node->lower.y);
     if(cur_node->children==NULL){
@@ -66,11 +90,12 @@ void print_level(int level){
     }
 }
 
+
 void print_tree(node_t tree, int level){
     print_level(level);
-    printf("Node: l(%f, %f); u(%f, %f) ", tree.lower.x, tree.lower.y, tree.upper.x, tree.upper.y);
+    printf("Node: l(%.2f, %.2f); u(%.2f, %.2f); cm (%.2f, %.2f); tm %.2f; ", tree.lower.x, tree.lower.y, tree.upper.x, tree.upper.y, tree.center_of_mass.x, tree.center_of_mass.y, tree.total_mass);
     if(tree.body != NULL){
-        printf("Body: (%f, %f)", tree.body->pos.x, tree.body->pos.y);
+        printf("Body: (%.2f, %.2f)", tree.body->pos.x, tree.body->pos.y);
     }
     else if (tree.children != NULL)
     {
