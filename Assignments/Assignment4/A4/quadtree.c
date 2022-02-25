@@ -1,32 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "quadtree.h"
 
 #define SUBDIVISIONS 2
 
-typedef struct coordinate
-{
-    double x;
-    double y;
-} coordinate_t;
 
-
-typedef struct body
-{
-    coordinate_t pos;
-    double mass;
-    coordinate_t vel;
-    double brightness;
-} body_t;
-
-
-typedef struct node{
-    struct node* children;
-    body_t* body;
-    coordinate_t lower;
-    coordinate_t upper;
-    coordinate_t center_of_mass;
-    float total_mass;
-} node_t;
 
 node_t create_node(float lx, float ux, float ly, float uy){
     coordinate_t lower = {lx, ly};
@@ -40,10 +18,10 @@ node_t create_node(float lx, float ux, float ly, float uy){
 }
 
 void insert_body(node_t *cur_node, body_t *new_body){
-    printf("Inserting body (%f, %f) into node (%f, %f)\n", new_body->pos.x, new_body->pos.y, cur_node->lower.x, cur_node->lower.y);
+    // printf("Inserting body (%f, %f) into node (%f, %f)\n", new_body->pos.x, new_body->pos.y, cur_node->lower.x, cur_node->lower.y);
     if(cur_node->children==NULL){
         // node is empty, thus insert body
-        printf("Node has no children yet\n");
+        // printf("Node has no children yet\n");
         if(cur_node->body == NULL){
             cur_node->body = new_body;
         }
@@ -51,16 +29,16 @@ void insert_body(node_t *cur_node, body_t *new_body){
         else{
             cur_node->children = malloc(SUBDIVISIONS*SUBDIVISIONS*sizeof(node_t));
             int id = 0;
-            printf("Splitting node\n");
+            // printf("Splitting node\n");
             float x_step = (cur_node->upper.x - cur_node->lower.x)/SUBDIVISIONS;
             float y_step = (cur_node->upper.y - cur_node->lower.y)/SUBDIVISIONS;
             for(double x_lower=cur_node->lower.x; x_lower<cur_node->upper.x; x_lower+=x_step){
                 for(double y_lower=cur_node->lower.y; y_lower<cur_node->upper.y; y_lower+=y_step){
-                    printf("%d, %f, %f\n", id, x_lower, y_lower);
+                    // printf("%d, %f, %f\n", id, x_lower, y_lower);
                     cur_node->children[id] = create_node(x_lower, x_lower+x_step, y_lower, y_lower + y_step);
                     // check where to insert body of current node
                     if(x_lower <= cur_node->body->pos.x && cur_node->body->pos.x < (x_lower + x_step) && y_lower <= cur_node->body->pos.y && cur_node->body->pos.y < (y_lower + y_step)){
-                        printf("Insert body into child\n");
+                        // printf("Insert body into child\n");
                         cur_node->children[id].body = cur_node->body;
                     }
                     //  check where to insert new body
@@ -119,30 +97,4 @@ node_t create_inital(){
     start.children = NULL;
     start.body = NULL;
     return start;
-}
-
-int main(){
-    node_t tree = create_inital();
-    tree.total_mass = 1;
-    body_t b;
-    coordinate_t b_pos = {0.1, 0.1};
-    b.pos = b_pos;
-    insert_body(&tree, &b);
-    body_t c;
-    coordinate_t c_pos = {0.4, 0.1};
-    c.pos = c_pos;
-    insert_body(&tree, &c);
-    body_t d;
-    coordinate_t d_pos = {0.9, 0.7};
-    d.pos = d_pos;
-    insert_body(&tree, &d);
-    // for(int i=0; i<4; i++){
-    // printf("h%f, %f ", tree.children[i].lower.x, tree.children[i].lower.y);
-    // printf("%d\n", tree.children[i].body != NULL);
-    // }
-    // // printf("%f, %f\n", tree.children[0].body->pos.x, tree.children[0].body->pos.y);
-    print_tree(tree, 0);
-    // printf("%f", tree.children[0].children[0].body->pos.x);
-
-    return 0;
 }
