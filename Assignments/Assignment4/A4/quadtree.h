@@ -10,5 +10,4 @@ typedef struct node{
 
 void insert_body(node_t *cur_node, body_t *new_body);
 void print_tree(node_t tree, int level);
-void update_mass(node_t *cur_node);
 node_t create_inital();

@@ -17,10 +17,9 @@ node_t create_node(float lx, float ux, float ly, float uy){
     return new_node;
 }
 
-void update_mass(node_t *cur_node){
-    // check if we have child nodes
+void update_single_mass(node_t *cur_node){
     if(cur_node->children == NULL){
-        // if we have a body, our center of mass is simply the centre of the body and our total mass is the mass
+    // if we have a body, our center of mass is simply the centre of the body and our total mass is the mass
         if(cur_node->body != NULL){
             cur_node->center_of_mass = cur_node->body->pos;
             cur_node->total_mass = cur_node->body->mass;
@@ -31,7 +30,6 @@ void update_mass(node_t *cur_node){
         cur_node->center_of_mass.x = 0;
         cur_node->center_of_mass.y = 0;
         for(int i=0; i<SUBDIVISIONS*SUBDIVISIONS; i++){
-            update_mass(cur_node->children + i);
             cur_node->total_mass += cur_node->children[i].total_mass;
             cur_node->center_of_mass.x += cur_node->children[i].total_mass * cur_node->children[i].center_of_mass.x;
             cur_node->center_of_mass.y += cur_node->children[i].total_mass * cur_node->children[i].center_of_mass.y;
@@ -48,6 +46,7 @@ void insert_body(node_t *cur_node, body_t *new_body){
         // printf("Node has no children yet\n");
         if(cur_node->body == NULL){
             cur_node->body = new_body;
+            update_single_mass(cur_node);
         }
         // node is not empty, split recursively
         else{
@@ -63,7 +62,7 @@ void insert_body(node_t *cur_node, body_t *new_body){
                     // check where to insert body of current node
                     if(x_lower <= cur_node->body->pos.x && cur_node->body->pos.x < (x_lower + x_step) && y_lower <= cur_node->body->pos.y && cur_node->body->pos.y < (y_lower + y_step)){
                         // printf("Insert body into child\n");
-                        cur_node->children[id].body = cur_node->body;
+                        insert_body(&cur_node->children[id], cur_node->body);
                     }
                     //  check where to insert new body
                     if(x_lower <= new_body->pos.x && new_body->pos.x <(x_lower + x_step) && y_lower <= new_body->pos.y && new_body->pos.y < (y_lower + y_step)){
@@ -73,6 +72,7 @@ void insert_body(node_t *cur_node, body_t *new_body){
                 }
             }
             cur_node->body = NULL;
+            update_single_mass(cur_node);
         }
     }
     else{
@@ -81,6 +81,7 @@ void insert_body(node_t *cur_node, body_t *new_body){
                 insert_body(&cur_node->children[id], new_body);
             }
         }
+        update_single_mass(cur_node);
     }
 }
 
