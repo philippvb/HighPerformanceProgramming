@@ -1,10 +1,48 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "quadtree.h"
 
-#define SUBDIVISIONS 2
 
+coordinate_t compute_direction(body_t a, body_t b){
+    coordinate_t dir;
+    dir.x = (a.pos.x - b.pos.x);
+    dir.y = (a.pos.y - b.pos.y);
+    return dir;
+}
 
+coordinate_t substract(coordinate_t a, coordinate_t b){
+    coordinate_t res;
+    res.x = a.x - b.x;
+    res.y = a.y - b.y;
+    return res;
+}
+
+double norm(coordinate_t a){
+    return sqrt(a.x * a.x + a.y * a.y);
+}
+
+coordinate_t add(coordinate_t a, coordinate_t b){
+    coordinate_t c;
+    c.x = a.x + b.x;
+    c.y = a.y + b.y;
+    return c;
+}
+
+coordinate_t multiply(coordinate_t a, double b){
+    coordinate_t c;
+    c.x = a.x * b;
+    c.y = a.y *b;
+    return c;
+}
+
+double get_width(node_t node){
+    return fabs(node.upper.x - node.lower.x);
+}
+
+double get_l2_distance(body_t body, node_t node){
+    return sqrt(pow(body.pos.x - node.center_of_mass.x, 2) + pow(body.pos.y - node.center_of_mass.y, 2));
+}
 
 node_t create_node(float lx, float ux, float ly, float uy){
     coordinate_t lower = {lx, ly};
@@ -91,10 +129,13 @@ void print_level(int level){
     }
 }
 
+void print_node_info(node_t node){
+    printf("Node: l(%.2f, %.2f); u(%.2f, %.2f); cm (%.2f, %.2f); tm %.2f; ", node.lower.x, node.lower.y, node.upper.x, node.upper.y, node.center_of_mass.x, node.center_of_mass.y, node.total_mass);
+}
 
 void print_tree(node_t tree, int level){
     print_level(level);
-    printf("Node: l(%.2f, %.2f); u(%.2f, %.2f); cm (%.2f, %.2f); tm %.2f; ", tree.lower.x, tree.lower.y, tree.upper.x, tree.upper.y, tree.center_of_mass.x, tree.center_of_mass.y, tree.total_mass);
+    print_node_info(tree);
     if(tree.body != NULL){
         printf("Body: (%.2f, %.2f)", tree.body->pos.x, tree.body->pos.y);
     }
