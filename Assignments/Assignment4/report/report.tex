@@ -2,7 +2,13 @@
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 \usepackage{pgfplots}
-\usepackage{amsmath, enumerate, amssymb, multirow, fancyhdr, color, graphicx, lastpage, listings, tikz, pdflscape, subfigure, float, polynom, hyperref, tabularx, forloop, geometry, listings, fancybox, tikz, forest, tabstackengine, cancel}
+\usepackage{amsmath, enumerate, amssymb, multirow, fancyhdr, color, graphicx, lastpage, listings, tikz, pdflscape, subfigure, float, polynom, hyperref, tabularx, forloop, geometry, listings, fancybox, tikz, forest, tabstackengine, cancel, algorithm}
+\usepackage[noend]{algpseudocode}
+
+\makeatletter
+\def\BState{\State\hskip-\ALG@thistlm}
+\makeatother
+
 \input kvmacros
 \geometry{a4paper,left=3cm, right=3cm, top=3cm, bottom=3cm}
 \pagestyle{fancy}
@@ -116,21 +122,78 @@
             5.2. This results in $\theta_{\max} = 0.25$, where an $\text{\textbf{pos\_maxdiff}}
             = 0.000885759450$ was achieved.
 
-        \subsection{Baseline results}
+        \subsection{Baseline results}\label{sec:Baseline}
             The following table shows the results of the algorithm with no
             optimization for a variable number of bodies:
             \noindent\begin{tabular}{c|c|c|c}
-                steps & 10 & 100 & 1000 \\
+                N bodies & 10 & 100 & 1000 \\
                 \hline
                 time (s) & 0.003 & 0.121 & 3.943\\
             \end{tabular}
 
-            Compared to the last assignment, these times are better for the case
-            of $N=10$, but worse for higher numbers.
+            Compared to the last assignment, these times are same or worse for
+            $N=10, 100$ and better for $N=1000$. This hints that while we have a
+            constant amount of work which might be higher compared to Assignment
+            3, the amount of work that scales with the number of bodies gets
+            reduced. The next section will dive further into this.
 
         \subsection{Analysis of runtime}
             This section analyzes the runtime of the two main parts of the
-            algorithm: Building the tree and calculating the forces.
+            algorithm:
+            \begin{itemize}
+                \item Tree: For the Barnes-Hut, we need to build and update the tree after each timestep.
+                \item Body update: For each step, we need to update the forces and the body positions etc.
+            \end{itemize}
+            \noindent\begin{tabular}{c|c|c|c}
+                N bodies & 10 & 100 & 1000 \\
+                \hline
+                Tree time (s) & 0.002 & 0.013 & 0.145 \\
+                Body update time (s) & 0.005 & 0.121 & 3.814\\
+            \end{tabular}
+            Here, we see that while for $N=10$, we spend roughly a third of the
+            time on rebuilding the tree, this gets way less for higher $N$. This
+            explains the results of \ref{sec:Baseline}, as for small $N$, adding
+            a tree creates overhead. However for large $N$, this overhead
+            becomes negligible and we benefit from the reduced cost for the body
+            update.
+
+        \subsubsection{Inplace computation}
+            In the baseline, we compute the force recursively if we need to descent into the children by:
+            \begin{algorithm}[H]
+                \caption{Force computation}\label{euclid}
+                \begin{algorithmic}[1]
+                \Procedure{compute\_force}{}
+                \If {current node has body}
+                    \State force = force between body and child body of node
+                \Else      
+                    \For {child in childs of current node}
+                        \State force += compute\_force with child
+                \EndFor
+                \EndIf
+                \State \Return force
+                \EndProcedure
+                \end{algorithmic}
+            \end{algorithm}
+            However, this creates a lot of unneeded force objects. Instead, we
+            can just add the force inplace to a global array. This leads to the
+            following results:\\
+            \noindent\begin{tabular}{c|c|c|c}
+                N bodies & 10 & 100 & 1000 \\
+                \hline
+                time (s) & 0.006 & 0.117 & 3.563\\
+            \end{tabular}\\
+            We see that for $N=100$, this reduces the computation time by
+            roughly 0.4s.
+
+        \section{Memory usage}
+            For large galaxies, they will not all fit in one cacheline. However
+            we can start at lower levels and compute all forces per level rathern for all.
+            This leads to\\
+            \noindent\begin{tabular}{c|c|c|c|c}
+                N levels & 0 (base) & 1 & 3 & 5 \\
+                \hline
+                time (s) &  3.563 & 3.353 & 3.227 & 3.632\\
+            \end{tabular}
 
 
         \section{TODO}
