@@ -4,10 +4,15 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
+#define MIN_BODIES 5
+
 const int body_length = 6;
 const double epsilon = 0.001;
 const double threshold = 0.25;
 double timestep;
+
+double total_update = 0;
+double total_tree = 0;
 
 int read_doubles_from_file(body_t** p, const char* fileName, int n_bodies) {
   /* Open input file and determine its size. */
@@ -56,6 +61,25 @@ double get_wall_seconds(){
   return seconds;
 }
 
+coordinate_t compute_all(body_t cur_body, node_t cur_node, double G){
+    body_t** all_child_bodies = malloc(cur_node.n_bodies * sizeof(body_t*));
+    int n_child_bodies = 0;
+    get_all_bodies(cur_node, all_child_bodies, &n_child_bodies);
+    coordinate_t force;
+    force.x = 0;
+    force.y = 0;
+    coordinate_t direction;
+    double r_cube;
+    for(int i=0; i<n_child_bodies; i++){
+      direction = substract(cur_body.pos, all_child_bodies[i]->pos);
+      r_cube = norm(direction) + epsilon;
+      r_cube = r_cube * r_cube * r_cube;
+      force = add(force, multiply(direction, all_child_bodies[i]->mass / r_cube * -G));
+    }
+    free(all_child_bodies);
+  return force;
+}
+
 coordinate_t compute_force(body_t* body, node_t* tree, double G){
   coordinate_t force;
   force.x = 0;
@@ -74,6 +98,9 @@ coordinate_t compute_force(body_t* body, node_t* tree, double G){
     return force;
   }
   else if (tree->children != NULL){
+    if(tree->n_bodies < MIN_BODIES){
+      return compute_all(*body, *tree, G);
+    }
     for(int i=0; i < SUBDIVISIONS*SUBDIVISIONS; i++){
       // empty node
       if((tree->children[i].children == NULL) && (tree->children[i].body == NULL)) continue;
@@ -101,6 +128,7 @@ void update_body(body_t* p, coordinate_t acc){
 }
 
 void step(body_t* p, coordinate_t* acc, int n_bodies, node_t* tree, double G){
+    double update_start = get_wall_seconds();
     // compute the forces
     for(int i=0; i<n_bodies; i++){
         acc[i] = compute_force(&p[i], tree, G);
@@ -109,12 +137,15 @@ void step(body_t* p, coordinate_t* acc, int n_bodies, node_t* tree, double G){
     for(int i=0; i<n_bodies; i++){
         update_body(p+i, acc[i]);
     }
+    total_update += get_wall_seconds() - update_start;
 
-    // rebuild the tree
+    double tree_start = get_wall_seconds();
+    // build the tree
     *tree = create_inital();
     for(int i=0; i<n_bodies; i++){
       insert_body(tree, &p[i]);
     }
+    total_tree += get_wall_seconds() - tree_start;
 }
 
 
@@ -141,11 +172,13 @@ int main(int argc, char *argv[]){
     for(int i=0; i<n_bodies; i++){
     insert_body(&tree, p+i);
     }
+    // print_tree(tree, 0);
     for(int i=0; i<steps; i++){
       step(p, accelerations, n_bodies, &tree, G);
     }
     double end = get_wall_seconds();
     printf("The execution took %f seconds\n", end-start);
+    printf("Time spend: Tree: %f, Update: %f\n", total_tree, total_update);
     write_doubles_to_file(p, output_file, n_bodies);
     free(p);
     free(accelerations);
