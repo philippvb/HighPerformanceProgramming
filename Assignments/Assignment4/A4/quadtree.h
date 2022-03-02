@@ -8,8 +8,11 @@ typedef struct node{
     coordinate_t upper;
     coordinate_t center_of_mass;
     double total_mass;
+    int n_bodies;
 } node_t;
 
+
+void get_all_bodies(node_t cur_node, body_t** out_bodies, int* n);
 void insert_body(node_t *cur_node, body_t *new_body);
 void print_tree(node_t tree, int level);
 node_t create_inital();

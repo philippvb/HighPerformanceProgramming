@@ -58,6 +58,7 @@ node_t create_node(double lx, double ux, double ly, double uy){
     new_node.upper = upper;
     new_node.children = NULL;
     new_node.body = NULL;
+    new_node.n_bodies = 0;
     return new_node;
 }
 
@@ -83,7 +84,23 @@ void update_single_mass(node_t *cur_node){
     }
 }
 
+void get_all_bodies(node_t cur_node, body_t** out_bodies, int* n){
+    if(cur_node.body != NULL){
+        out_bodies[*n] = cur_node.body;
+        *n+=1;
+    }
+    else if (cur_node.children != NULL)
+    {
+        for(int id = 0; id<SUBDIVISIONS*SUBDIVISIONS; id++){
+            get_all_bodies(cur_node.children[id], out_bodies, n);
+        }
+    }
+}
+
 void insert_body(node_t *cur_node, body_t *new_body){
+    // we have a new body
+    cur_node->n_bodies++;
+
     if(cur_node->children==NULL){
         // node is empty, thus insert body
         if(cur_node->body == NULL){
@@ -164,5 +181,6 @@ node_t create_inital(){
     start.upper = upper;
     start.children = NULL;
     start.body = NULL;
+    start.n_bodies = 0;
     return start;
 }
