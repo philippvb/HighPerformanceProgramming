@@ -97,6 +97,25 @@ void get_all_bodies(node_t cur_node, body_t** out_bodies, int* n){
     }
 }
 
+void get_level(node_t *tree, node_t** node_array, int level, int maxlevel, int* i){
+    if ((tree->body != NULL) || (level>=maxlevel)){
+        node_array[*i] = tree;
+        *i+=1;
+    }
+    else if (tree->children != NULL){
+        for(int child_id=0; child_id<SUBDIVISIONS*SUBDIVISIONS; child_id++){
+            get_level(&tree->children[child_id], node_array, level+1, maxlevel, i);
+        }
+    }
+}
+
+node_t** get_levels(node_t *tree, int maxlevel, int* n){
+    node_t** node_level = malloc(pow(SUBDIVISIONS*SUBDIVISIONS, maxlevel) * sizeof(node_t*));
+    get_level(tree, node_level, 0, maxlevel, n);
+    return node_level;
+}
+
+
 void insert_body(node_t *cur_node, body_t *new_body){
     // we have a new body
     cur_node->n_bodies++;
