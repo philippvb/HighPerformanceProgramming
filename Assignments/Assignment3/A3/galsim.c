@@ -103,14 +103,20 @@ coordinate compute_force(body* p, int n_bodies, int cur_body_index, double G){
         
     }
     for(int j=cur_body_index; j<n_bodies; j++){
+        // printf("Computing force between %f, %f and %f, %f\n", cur_body.pos.x, cur_body.pos.x, p[j].pos.x, p[j].pos.y);
         direction = compute_direction(cur_body, p[j]);
+        // printf("Dir: %f, %f\n", direction.x, direction.y);
         r_cube = norm(direction) + epsilon;
         r_cube = r_cube * r_cube * r_cube;
+        // printf("Rcube %f\n", r_cube);
+        // printf("Mass %f\n", p[j].mass);
         force.x += direction.x * p[j].mass / r_cube;
         force.y += direction.y * p[j].mass / r_cube; 
+        // printf("Resulting force is %f, %f\n", force.x, force.y);
     }
     force.x *=-G;
     force.y *=-G;
+    // printf("Resulting force is %f, %f\n", force.x, force.y);
     return force;
 }
 
@@ -125,7 +131,9 @@ void update_body(body* p, coordinate acc){
 void step(body* p, coordinate* acc, int n_bodies, double G){
     for(int i=0; i<n_bodies; i++){
         acc[i] = compute_force(p, n_bodies, i, G);
+        // printf("%f, %f\n", acc[i].x, acc[i].y);
     }
+        // printf("\n");
     for(int i=0; i<n_bodies; i++){
         update_body(p+i, acc[i]);
     }
@@ -153,6 +161,9 @@ int main(int argc, char *argv[]){
     }
     double end = get_wall_seconds();
     printf("The execution took %f seconds\n", end-start);
+    for(int i=0; i<n_bodies; i++){
+    printf("%f, %f\n", p[i].pos.x, p[i].pos.y);
+    }
     write_doubles_to_file(p, output_file, n_bodies);
     free(p);
     free(accelerations);
