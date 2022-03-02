@@ -7,7 +7,7 @@ typedef struct node{
     coordinate_t lower;
     coordinate_t upper;
     coordinate_t center_of_mass;
-    float total_mass;
+    double total_mass;
 } node_t;
 
 void insert_body(node_t *cur_node, body_t *new_body);
@@ -21,3 +21,4 @@ coordinate_t substract(coordinate_t a, coordinate_t b);
 coordinate_t add(coordinate_t a, coordinate_t b);
 coordinate_t multiply(coordinate_t a, double b);
 void print_node_info(node_t node);
+coordinate_t get_center(node_t n);

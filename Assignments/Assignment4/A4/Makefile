@@ -1,12 +1,12 @@
 main: quadtree.o main.o
-	gcc -o main quadtree.o main.o
+	gcc -o galsim quadtree.o main.o -Wall
 
 main.o: main.c quadtree.o
-	gcc -c main.c
+	gcc -c main.c -Wall
 
 quadtree.o: quadtree.c
-	gcc -c quadtree.c
+	gcc -c quadtree.c -Wall
 
 
 clean:
-	rm ./main ./quadtree.o ./main.o
+	rm ./galsim ./quadtree.o ./main.o

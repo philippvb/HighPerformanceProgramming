@@ -4,7 +4,7 @@
 #include <stdlib.h>
 const int body_length = 6;
 const double epsilon = 0.001;
-const double threshold = 0;
+const double threshold = 0.02;
 double timestep;
 
 int read_doubles_from_file(body_t** p, const char* fileName, int n_bodies) {
@@ -80,12 +80,12 @@ coordinate_t compute_force(body_t* body, node_t* tree, double G){
       // empty node
       if((tree->children[i].children == NULL) && (tree->children[i].body == NULL)) continue;
       // we are far enough away, can treat it as one node
-      if(get_width(tree->children[i]) / norm(substract(tree->children[i].center_of_mass, body->pos)) < threshold){
-        printf("Treating as one");
+      if((get_width(tree->children[i]) / norm(substract(tree->children[i].center_of_mass, body->pos))) <= threshold){
+        // printf("Treating as one");
         direction = substract(body->pos, tree->children[i].center_of_mass);
         r_cube = norm(direction) + epsilon;
         r_cube = r_cube * r_cube * r_cube;
-        force = add(force, multiply(direction, tree->children[i].total_mass /r_cube * -G));
+        force = add(force, multiply(direction, tree->children[i].total_mass / r_cube * -G));
       }
       // we need to descent into this child
       else{
@@ -114,6 +114,12 @@ void step(body_t* p, coordinate_t* acc, int n_bodies, node_t* tree, double G){
     for(int i=0; i<n_bodies; i++){
         update_body(p+i, acc[i]);
     }
+
+    // rebuild the tree
+    *tree = create_inital();
+    for(int i=0; i<n_bodies; i++){
+      insert_body(tree, &p[i]);
+    }
 }
 
 
@@ -121,18 +127,18 @@ void step(body_t* p, coordinate_t* acc, int n_bodies, node_t* tree, double G){
 
 
 int main(int argc, char *argv[]){
-    // if(argc != 6) {
-    // printf("Give 5 input args: N filename n_steps delta_t graphics\n");
-    // return -1;
-    // }
+    if(argc != 6) {
+    printf("Give 5 input args: N filename n_steps delta_t graphics\n");
+    return -1;
+    }
     int n_bodies = atoi(argv[1]);
     const char* fileName = argv[2];
     const char* output_file = "result.gal";
     int steps = atoi(argv[3]);
     timestep = atof(argv[4]);
-    // int use_graphics = atoi(argv[5]); // don't use since they dont work
+    int use_graphics = atoi(argv[5]); // don't use since they dont work
     coordinate_t *accelerations = malloc(sizeof(coordinate_t) * n_bodies);
-    const int G = 100/n_bodies;
+    const double G = ((double) 100 )/n_bodies;
     body_t *p;
     read_doubles_from_file(&p, fileName, n_bodies);
     node_t tree = create_inital();
@@ -145,17 +151,17 @@ int main(int argc, char *argv[]){
     // printf("%d\n", tree.children[i].body != NULL);
     // }
     // // printf("%f, %f\n", tree.children[0].body->pos.x, tree.children[0].body->pos.y);
-    print_tree(tree, 0);
-    printf("\n");
+    // print_tree(tree, 0);
+    // printf("\n");
     // coordinate_t f = compute_force(&p[0], &tree, G);
     // printf("%f, %f", f.x, f.y);
     // printf("%f", tree.children[0].children[0].body->pos.x);
     for(int i=0; i<steps; i++){
       step(p, accelerations, n_bodies, &tree, G);
     }
-    for(int i=0; i<n_bodies; i++){
-    printf("%f, %f\n", p[i].pos.x, p[i].pos.y);
-    }
+    // for(int i=0; i<n_bodies; i++){
+    // printf("%f, %f\n", p[i].pos.x, p[i].pos.y);
+    // }
     write_doubles_to_file(p, output_file, n_bodies);
     free(p);
     free(accelerations);

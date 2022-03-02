@@ -18,6 +18,12 @@ coordinate_t substract(coordinate_t a, coordinate_t b){
     return res;
 }
 
+coordinate_t get_center(node_t n){
+    coordinate_t center;
+    center = add(n.lower, multiply(substract(n.upper, n.lower), 0.5));
+    return center;
+}
+
 double norm(coordinate_t a){
     return sqrt(a.x * a.x + a.y * a.y);
 }
@@ -37,14 +43,14 @@ coordinate_t multiply(coordinate_t a, double b){
 }
 
 double get_width(node_t node){
-    return fabs(node.upper.x - node.lower.x);
+    return node.upper.x - node.lower.x;
 }
 
 double get_l2_distance(body_t body, node_t node){
     return sqrt(pow(body.pos.x - node.center_of_mass.x, 2) + pow(body.pos.y - node.center_of_mass.y, 2));
 }
 
-node_t create_node(float lx, float ux, float ly, float uy){
+node_t create_node(double lx, double ux, double ly, double uy){
     coordinate_t lower = {lx, ly};
     coordinate_t upper = {ux, uy};
     node_t new_node;
@@ -91,8 +97,8 @@ void insert_body(node_t *cur_node, body_t *new_body){
             cur_node->children = malloc(SUBDIVISIONS*SUBDIVISIONS*sizeof(node_t));
             int id = 0;
             // printf("Splitting node\n");
-            float x_step = (cur_node->upper.x - cur_node->lower.x)/SUBDIVISIONS;
-            float y_step = (cur_node->upper.y - cur_node->lower.y)/SUBDIVISIONS;
+            double x_step = (cur_node->upper.x - cur_node->lower.x)/ (double) SUBDIVISIONS;
+            double y_step = (cur_node->upper.y - cur_node->lower.y)/ (double) SUBDIVISIONS;
             for(double x_lower=cur_node->lower.x; x_lower<cur_node->upper.x; x_lower+=x_step){
                 for(double y_lower=cur_node->lower.y; y_lower<cur_node->upper.y; y_lower+=y_step){
                     // printf("%d, %f, %f\n", id, x_lower, y_lower);
