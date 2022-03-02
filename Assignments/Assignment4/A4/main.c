@@ -80,27 +80,20 @@ coordinate_t compute_all(body_t cur_body, node_t cur_node, double G){
   return force;
 }
 
-coordinate_t compute_force(body_t* body, node_t* tree, double G){
-  coordinate_t force;
-  force.x = 0;
-  force.y = 0;
+void compute_force(body_t* body, node_t* tree, double G, coordinate_t *body_acc){
   coordinate_t direction;
   double r_cube;
   // if we have just one body, calculate this force
   if(tree->body != NULL){
     // if we are our ourself, we dont need to do anything, just return null force
-    if(tree->body == body) return force;
+    if(tree->body == body) return;
     direction = substract(body->pos, tree->body->pos);
     r_cube = norm(direction) + epsilon;
     r_cube = r_cube * r_cube * r_cube;
-    force.x = direction.x * tree->body->mass /r_cube * -G;
-    force.y = direction.y * tree->body->mass /r_cube *-G;
-    return force;
+    *body_acc = add(*body_acc, multiply(direction,tree->body->mass / r_cube * -G));
+    return;
   }
   else if (tree->children != NULL){
-    if(tree->n_bodies < MIN_BODIES){
-      return compute_all(*body, *tree, G);
-    }
     for(int i=0; i < SUBDIVISIONS*SUBDIVISIONS; i++){
       // empty node
       if((tree->children[i].children == NULL) && (tree->children[i].body == NULL)) continue;
@@ -109,14 +102,14 @@ coordinate_t compute_force(body_t* body, node_t* tree, double G){
         direction = substract(body->pos, tree->children[i].center_of_mass);
         r_cube = norm(direction) + epsilon;
         r_cube = r_cube * r_cube * r_cube;
-        force = add(force, multiply(direction, tree->children[i].total_mass / r_cube * -G));
+        *body_acc = add(*body_acc, multiply(direction, tree->children[i].total_mass / r_cube * -G));
       }
       // we need to descent into this child
       else{
-        force = add(compute_force(body, &tree->children[i], G), force);
+        compute_force(body, &tree->children[i], G, body_acc);
       }
     }
-  return force;
+  return;
   }
 }
 
@@ -131,7 +124,9 @@ void step(body_t* p, coordinate_t* acc, int n_bodies, node_t* tree, double G){
     double update_start = get_wall_seconds();
     // compute the forces
     for(int i=0; i<n_bodies; i++){
-        acc[i] = compute_force(&p[i], tree, G);
+        acc[i].x = 0;
+        acc[i].y = 0;
+        compute_force(&p[i], tree, G, &acc[i]);
     }
     // update the positions
     for(int i=0; i<n_bodies; i++){
