@@ -103,39 +103,42 @@ coordinate compute_force(body* p, int n_bodies, int cur_body_index, double G){
         
     }
     for(int j=cur_body_index; j<n_bodies; j++){
-        // printf("Computing force between %f, %f and %f, %f\n", cur_body.pos.x, cur_body.pos.x, p[j].pos.x, p[j].pos.y);
         direction = compute_direction(cur_body, p[j]);
-        // printf("Dir: %f, %f\n", direction.x, direction.y);
         r_cube = norm(direction) + epsilon;
         r_cube = r_cube * r_cube * r_cube;
-        // printf("Rcube %f\n", r_cube);
-        // printf("Mass %f\n", p[j].mass);
         force.x += direction.x * p[j].mass / r_cube;
         force.y += direction.y * p[j].mass / r_cube; 
-        // printf("Resulting force is %f, %f\n", force.x, force.y);
     }
     force.x *=-G;
     force.y *=-G;
-    // printf("Resulting force is %f, %f\n", force.x, force.y);
     return force;
 }
 
+double min(double x, double y){
+    if (x<y) return x;
+    else return y;
+}
+
+double max(double x, double y){
+    if (x<y) return y;
+    else return x;
+}
 
 void update_body(body* p, coordinate acc){
     p->vel.x += timestep * acc.x;
     p->vel.y += timestep * acc.y;
     p->pos.x += timestep * p->vel.x;
     p->pos.y += timestep * p->vel.y;
+    // p->pos.x = min(1.0, max(0.0, p->pos.x));
+    // p->pos.y = min(1.0, max(0.0, p->pos.y));
 }
 
 void step(body* p, coordinate* acc, int n_bodies, double G){
     for(int i=0; i<n_bodies; i++){
         acc[i] = compute_force(p, n_bodies, i, G);
-        // printf("%f, %f\n", acc[i].x, acc[i].y);
     }
-        // printf("\n");
     for(int i=0; i<n_bodies; i++){
-        update_body(p+i, acc[i]);
+        update_body(&p[i], acc[i]);
     }
 }
 
@@ -154,16 +157,16 @@ int main(int argc, char *argv[]){
     body *p;
     read_doubles_from_file(&p, fileName, n_bodies);
     coordinate *accelerations = malloc(sizeof(coordinate) * n_bodies);
-    const int G = 100/n_bodies;
+    const double G = ((double) 100 )/n_bodies;
     double start = get_wall_seconds();
     for(int s=0; s<steps; s++){
         step(p, accelerations, n_bodies, G);
     }
     double end = get_wall_seconds();
     printf("The execution took %f seconds\n", end-start);
-    for(int i=0; i<n_bodies; i++){
-    printf("%f, %f\n", p[i].pos.x, p[i].pos.y);
-    }
+    // for(int i=0; i<n_bodies; i++){
+    //     accelerations[i] = compute_force(p, n_bodies, i, G);
+    // }
     write_doubles_to_file(p, output_file, n_bodies);
     free(p);
     free(accelerations);
