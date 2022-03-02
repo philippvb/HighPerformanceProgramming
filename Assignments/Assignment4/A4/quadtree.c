@@ -84,10 +84,8 @@ void update_single_mass(node_t *cur_node){
 }
 
 void insert_body(node_t *cur_node, body_t *new_body){
-    // printf("Inserting body (%f, %f) into node (%f, %f)\n", new_body->pos.x, new_body->pos.y, cur_node->lower.x, cur_node->lower.y);
     if(cur_node->children==NULL){
         // node is empty, thus insert body
-        // printf("Node has no children yet\n");
         if(cur_node->body == NULL){
             cur_node->body = new_body;
             update_single_mass(cur_node);
@@ -96,16 +94,13 @@ void insert_body(node_t *cur_node, body_t *new_body){
         else{
             cur_node->children = malloc(SUBDIVISIONS*SUBDIVISIONS*sizeof(node_t));
             int id = 0;
-            // printf("Splitting node\n");
             double x_step = (cur_node->upper.x - cur_node->lower.x)/ (double) SUBDIVISIONS;
             double y_step = (cur_node->upper.y - cur_node->lower.y)/ (double) SUBDIVISIONS;
             for(double x_lower=cur_node->lower.x; x_lower<cur_node->upper.x; x_lower+=x_step){
                 for(double y_lower=cur_node->lower.y; y_lower<cur_node->upper.y; y_lower+=y_step){
-                    // printf("%d, %f, %f\n", id, x_lower, y_lower);
                     cur_node->children[id] = create_node(x_lower, x_lower+x_step, y_lower, y_lower + y_step);
                     // check where to insert body of current node
                     if(x_lower <= cur_node->body->pos.x && cur_node->body->pos.x < (x_lower + x_step) && y_lower <= cur_node->body->pos.y && cur_node->body->pos.y < (y_lower + y_step)){
-                        // printf("Insert body into child\n");
                         insert_body(&cur_node->children[id], cur_node->body);
                     }
                     //  check where to insert new body

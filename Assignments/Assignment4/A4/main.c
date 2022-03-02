@@ -2,9 +2,11 @@
 #include "quadtree.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
+
 const int body_length = 6;
 const double epsilon = 0.001;
-const double threshold = 0.02;
+const double threshold = 0.25;
 double timestep;
 
 int read_doubles_from_file(body_t** p, const char* fileName, int n_bodies) {
@@ -47,10 +49,14 @@ int write_doubles_to_file(body_t* p, const char* fileName, int n_bodies){
     return 0;
 }
 
+double get_wall_seconds(){
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  double seconds = tv.tv_sec + (double)tv.tv_usec/1000000;
+  return seconds;
+}
+
 coordinate_t compute_force(body_t* body, node_t* tree, double G){
-  // printf("\nGoing into ");
-  // print_node_info(*tree);
-  // printf("\");
   coordinate_t force;
   force.x = 0;
   force.y = 0;
@@ -60,28 +66,19 @@ coordinate_t compute_force(body_t* body, node_t* tree, double G){
   if(tree->body != NULL){
     // if we are our ourself, we dont need to do anything, just return null force
     if(tree->body == body) return force;
-    // printf("Computing force between %f, %f and %f, %f\n", body->pos.x, body->pos.y, tree->body->pos.x, tree->body->pos.y);
     direction = substract(body->pos, tree->body->pos);
-    // printf("Dir: %f, %f\n", direction.x, direction.y);
     r_cube = norm(direction) + epsilon;
     r_cube = r_cube * r_cube * r_cube;
-    // printf("Rcube %f\n", r_cube);
-    // printf("Mass %f\n", tree->body->mass);
     force.x = direction.x * tree->body->mass /r_cube * -G;
     force.y = direction.y * tree->body->mass /r_cube *-G;
-    // printf("Resulting force is %f, %f\n", force.x, force.y);
     return force;
   }
   else if (tree->children != NULL){
-    // printf("Here");
-    // print_node_info(tree->children[0]);
-    // printf("%d", tree->children[1].children == NULL);
     for(int i=0; i < SUBDIVISIONS*SUBDIVISIONS; i++){
       // empty node
       if((tree->children[i].children == NULL) && (tree->children[i].body == NULL)) continue;
       // we are far enough away, can treat it as one node
       if((get_width(tree->children[i]) / norm(substract(tree->children[i].center_of_mass, body->pos))) <= threshold){
-        // printf("Treating as one");
         direction = substract(body->pos, tree->children[i].center_of_mass);
         r_cube = norm(direction) + epsilon;
         r_cube = r_cube * r_cube * r_cube;
@@ -92,10 +89,8 @@ coordinate_t compute_force(body_t* body, node_t* tree, double G){
         force = add(compute_force(body, &tree->children[i], G), force);
       }
     }
-  // printf("Resulting force is %f, %f\n", force.x, force.y);
   return force;
   }
-  // return force;
 }
 
 void update_body(body_t* p, coordinate_t acc){
@@ -106,11 +101,11 @@ void update_body(body_t* p, coordinate_t acc){
 }
 
 void step(body_t* p, coordinate_t* acc, int n_bodies, node_t* tree, double G){
+    // compute the forces
     for(int i=0; i<n_bodies; i++){
         acc[i] = compute_force(&p[i], tree, G);
-        // printf("Acc is: %f, %f\n", acc[i].x, acc[i].y);
     }
-    // printf("\n");
+    // update the positions
     for(int i=0; i<n_bodies; i++){
         update_body(p+i, acc[i]);
     }
@@ -141,27 +136,16 @@ int main(int argc, char *argv[]){
     const double G = ((double) 100 )/n_bodies;
     body_t *p;
     read_doubles_from_file(&p, fileName, n_bodies);
+    double start = get_wall_seconds();
     node_t tree = create_inital();
     for(int i=0; i<n_bodies; i++){
     insert_body(&tree, p+i);
-    // break;
     }
-    // for(int i=0; i<4; i++){
-    // printf("h%f, %f ", tree.children[i].lower.x, tree.children[i].lower.y);
-    // printf("%d\n", tree.children[i].body != NULL);
-    // }
-    // // printf("%f, %f\n", tree.children[0].body->pos.x, tree.children[0].body->pos.y);
-    // print_tree(tree, 0);
-    // printf("\n");
-    // coordinate_t f = compute_force(&p[0], &tree, G);
-    // printf("%f, %f", f.x, f.y);
-    // printf("%f", tree.children[0].children[0].body->pos.x);
     for(int i=0; i<steps; i++){
       step(p, accelerations, n_bodies, &tree, G);
     }
-    // for(int i=0; i<n_bodies; i++){
-    // printf("%f, %f\n", p[i].pos.x, p[i].pos.y);
-    // }
+    double end = get_wall_seconds();
+    printf("The execution took %f seconds\n", end-start);
     write_doubles_to_file(p, output_file, n_bodies);
     free(p);
     free(accelerations);
