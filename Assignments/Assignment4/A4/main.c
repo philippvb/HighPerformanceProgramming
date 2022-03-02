@@ -5,6 +5,7 @@
 #include <sys/time.h>
 
 #define MIN_BODIES 5
+#define NODE_LEVEL 3
 
 const int body_length = 6;
 const double epsilon = 0.001;
@@ -122,20 +123,30 @@ void update_body(body_t* p, coordinate_t acc){
 
 void step(body_t* p, coordinate_t* acc, int n_bodies, node_t* tree, double G){
     double update_start = get_wall_seconds();
-    // compute the forces
+
+    // get all the head nodes from each level
+    int nodes=0;
+    node_t** node_levels = get_levels(tree, NODE_LEVEL, &nodes);
+    // clear the accelerations
     for(int i=0; i<n_bodies; i++){
         acc[i].x = 0;
         acc[i].y = 0;
-        compute_force(&p[i], tree, G, &acc[i]);
+    }
+    // update the forces
+    for(int child_id=0; child_id<nodes; child_id++){
+      for(int i=0; i<n_bodies; i++){
+          compute_force(&p[i], node_levels[child_id], G, &acc[i]);
+      }
     }
     // update the positions
     for(int i=0; i<n_bodies; i++){
         update_body(p+i, acc[i]);
     }
-    total_update += get_wall_seconds() - update_start;
+    free(node_levels);
 
+    total_update += get_wall_seconds() - update_start;
     double tree_start = get_wall_seconds();
-    // build the tree
+    // rebuild the tree
     *tree = create_inital();
     for(int i=0; i<n_bodies; i++){
       insert_body(tree, &p[i]);
