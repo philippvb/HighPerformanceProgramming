@@ -3,10 +3,22 @@
 #include <math.h>
 #include <string.h>
 #include <sys/time.h>
+#include <pthread.h>
 
 const int body_length = 6;
 const double epsilon = 0.001;
 double timestep;
+
+int n_bodies;
+double G;
+int n_threads;
+typedef struct step_args{
+    int start;
+    int end;
+} step_args_t;
+
+pthread_t* threads;
+step_args_t* thread_data;
 
 typedef struct coordinate
 {
@@ -22,6 +34,10 @@ typedef struct body
     coordinate vel;
     double brightness;
 } body;
+
+body* body_list;
+coordinate* accelerations;
+
 
 double get_wall_seconds(){
   struct timeval tv;
@@ -114,6 +130,18 @@ coordinate compute_force(body* p, int n_bodies, int cur_body_index, double G){
     return force;
 }
 
+
+void* make_steps(void* arg){
+    step_args_t* data = (step_args_t*) arg;
+    for(int i=data->start; i<data->end; i++){
+        accelerations[i] = compute_force(body_list, n_bodies, i, G);
+    }
+    // for(int i=data->start; i<data->end; i++){
+    //     update_body(&body_list[i], accelerations[i]);
+    // }
+    return NULL;
+}
+
 double min(double x, double y){
     if (x<y) return x;
     else return y;
@@ -134,8 +162,11 @@ void update_body(body* p, coordinate acc){
 }
 
 void step(body* p, coordinate* acc, int n_bodies, double G){
-    for(int i=0; i<n_bodies; i++){
-        acc[i] = compute_force(p, n_bodies, i, G);
+    for(int i=0; i<n_threads; i++){
+        pthread_create(&threads[i], NULL, make_steps, &thread_data[i]);
+    }
+    for(int i=0; i<n_threads; i++){
+        pthread_join(threads[i], NULL);
     }
     for(int i=0; i<n_bodies; i++){
         update_body(&p[i], acc[i]);
@@ -144,27 +175,41 @@ void step(body* p, coordinate* acc, int n_bodies, double G){
 
 
 int main(int argc, char *argv[]){
-    if(argc != 6) {
-    printf("Give 5 input args: N filename n_steps delta_t graphics\n");
+    if(argc != 7) {
+    printf("Give 6 input args: N filename n_steps delta_t graphics N_threads\n");
     return -1;
     }
-    int n_bodies = atoi(argv[1]);
+    n_bodies = atoi(argv[1]);
     const char* fileName = argv[2];
     const char* output_file = "result.gal";
     int steps = atoi(argv[3]);
     timestep = atof(argv[4]);
     int use_graphics = atoi(argv[5]); // don't use since they dont work
-    body *p;
-    read_doubles_from_file(&p, fileName, n_bodies);
-    coordinate *accelerations = malloc(sizeof(coordinate) * n_bodies);
-    const double G = ((double) 100 )/n_bodies;
+    n_threads = atof(argv[6]);
+    if(n_bodies%n_threads!=0){
+        printf("Number of bodies is not divisible by number of threads!");
+        return -1;
+    }
+    read_doubles_from_file(&body_list, fileName, n_bodies);
+    accelerations = malloc(sizeof(coordinate) * n_bodies);
+    G = ((double) 100 )/n_bodies;
+    threads = malloc(n_threads * sizeof(pthread_t));
+    thread_data = malloc(n_threads * sizeof(step_args_t));
+    int block_size = n_bodies/n_threads;
+    for(int i=0; i<n_threads; i++){
+        thread_data[i].start = i * block_size;
+        thread_data[i].end = (i+1) * block_size;
+    }
+
     double start = get_wall_seconds();
     for(int s=0; s<steps; s++){
-        step(p, accelerations, n_bodies, G);
+        step(body_list, accelerations, n_bodies, G);
     }
     double end = get_wall_seconds();
     printf("The execution took %f seconds\n", end-start);
-    write_doubles_to_file(p, output_file, n_bodies);
-    free(p);
+    write_doubles_to_file(body_list, output_file, n_bodies);
+    free(body_list);
     free(accelerations);
+    free(threads);
+    free(thread_data);
 }
