@@ -20,6 +20,28 @@ typedef struct step_args{
 pthread_t* threads;
 step_args_t* thread_data;
 
+
+pthread_mutex_t lock;
+pthread_cond_t mysignal;
+int waiting = 0;
+int state = 0;
+
+void barrier() {
+  int mystate; 
+  pthread_mutex_lock (&lock);
+  mystate=state;
+  waiting++;
+  if (waiting == n_threads) {
+    waiting = 0;
+    state = 1 - mystate;
+    pthread_cond_broadcast(&mysignal);
+  }
+  while (mystate == state) {
+    pthread_cond_wait(&mysignal, &lock);
+  }
+  pthread_mutex_unlock(&lock);
+}
+
 typedef struct coordinate
 {
     double x;
@@ -131,17 +153,6 @@ coordinate compute_force(body* p, int n_bodies, int cur_body_index, double G){
 }
 
 
-void* make_steps(void* arg){
-    step_args_t* data = (step_args_t*) arg;
-    for(int i=data->start; i<data->end; i++){
-        accelerations[i] = compute_force(body_list, n_bodies, i, G);
-    }
-    // for(int i=data->start; i<data->end; i++){
-    //     update_body(&body_list[i], accelerations[i]);
-    // }
-    return NULL;
-}
-
 double min(double x, double y){
     if (x<y) return x;
     else return y;
@@ -161,6 +172,19 @@ void update_body(body* p, coordinate acc){
     // p->pos.y = min(1.0, max(0.0, p->pos.y));
 }
 
+
+void* make_steps(void* arg){
+    step_args_t* data = (step_args_t*) arg;
+    for(int i=data->start; i<data->end; i++){
+        accelerations[i] = compute_force(body_list, n_bodies, i, G);
+    }
+    barrier();
+    for(int i=data->start; i<data->end; i++){
+        update_body(&body_list[i], accelerations[i]);
+    }
+    return NULL;
+}
+
 void step(body* p, coordinate* acc, int n_bodies, double G){
     for(int i=0; i<n_threads; i++){
         pthread_create(&threads[i], NULL, make_steps, &thread_data[i]);
@@ -168,9 +192,9 @@ void step(body* p, coordinate* acc, int n_bodies, double G){
     for(int i=0; i<n_threads; i++){
         pthread_join(threads[i], NULL);
     }
-    for(int i=0; i<n_bodies; i++){
-        update_body(&p[i], acc[i]);
-    }
+    // for(int i=0; i<n_bodies; i++){
+    //     update_body(&p[i], acc[i]);
+    // }
 }
 
 
@@ -191,6 +215,10 @@ int main(int argc, char *argv[]){
         return -1;
     }
     read_doubles_from_file(&body_list, fileName, n_bodies);
+
+    pthread_cond_init(&mysignal, NULL);
+    pthread_mutex_init(&lock, NULL);
+
     accelerations = malloc(sizeof(coordinate) * n_bodies);
     G = ((double) 100 )/n_bodies;
     threads = malloc(n_threads * sizeof(pthread_t));
@@ -208,6 +236,9 @@ int main(int argc, char *argv[]){
     double end = get_wall_seconds();
     printf("The execution took %f seconds\n", end-start);
     write_doubles_to_file(body_list, output_file, n_bodies);
+
+    pthread_cond_destroy(&mysignal);
+    pthread_mutex_destroy(&lock);
     free(body_list);
     free(accelerations);
     free(threads);
