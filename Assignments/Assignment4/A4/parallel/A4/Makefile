@@ -1,4 +1,4 @@
-OFLAGS = 
+OFLAGS = -O3
 Subdir = ../../
 main: quadtree.o main.o
 	gcc -o galsim quadtree.o main.o -Wall $(OFLAGS)

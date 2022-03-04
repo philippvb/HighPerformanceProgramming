@@ -152,24 +152,11 @@ coordinate compute_force(body* p, int n_bodies, int cur_body_index, double G){
     return force;
 }
 
-
-double min(double x, double y){
-    if (x<y) return x;
-    else return y;
-}
-
-double max(double x, double y){
-    if (x<y) return y;
-    else return x;
-}
-
 void update_body(body* p, coordinate acc){
     p->vel.x += timestep * acc.x;
     p->vel.y += timestep * acc.y;
     p->pos.x += timestep * p->vel.x;
     p->pos.y += timestep * p->vel.y;
-    // p->pos.x = min(1.0, max(0.0, p->pos.x));
-    // p->pos.y = min(1.0, max(0.0, p->pos.y));
 }
 
 
@@ -192,9 +179,6 @@ void step(body* p, coordinate* acc, int n_bodies, double G){
     for(int i=0; i<n_threads; i++){
         pthread_join(threads[i], NULL);
     }
-    // for(int i=0; i<n_bodies; i++){
-    //     update_body(&p[i], acc[i]);
-    // }
 }
 
 
@@ -210,10 +194,6 @@ int main(int argc, char *argv[]){
     timestep = atof(argv[4]);
     int use_graphics = atoi(argv[5]); // don't use since they dont work
     n_threads = atof(argv[6]);
-    if(n_bodies%n_threads!=0){
-        printf("Number of bodies is not divisible by number of threads!");
-        return -1;
-    }
     read_doubles_from_file(&body_list, fileName, n_bodies);
 
     pthread_cond_init(&mysignal, NULL);
@@ -223,12 +203,13 @@ int main(int argc, char *argv[]){
     G = ((double) 100 )/n_bodies;
     threads = malloc(n_threads * sizeof(pthread_t));
     thread_data = malloc(n_threads * sizeof(step_args_t));
-    int block_size = n_bodies/n_threads;
+    double block_size = (double) n_bodies/ (double) n_threads;
+    // printf("Block size %f\n", block_size);
     for(int i=0; i<n_threads; i++){
-        thread_data[i].start = i * block_size;
-        thread_data[i].end = (i+1) * block_size;
+        thread_data[i].start = (int) i * block_size;
+        thread_data[i].end = (int) ((i+1) * block_size);
+        // printf("Start %d, end %d\n", thread_data[i].start, thread_data[i].end);
     }
-
     double start = get_wall_seconds();
     for(int s=0; s<steps; s++){
         step(body_list, accelerations, n_bodies, G);

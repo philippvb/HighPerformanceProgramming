@@ -12,7 +12,7 @@
 \input kvmacros
 \geometry{a4paper,left=3cm, right=3cm, top=3cm, bottom=3cm}
 \pagestyle{fancy}
-\title{Assignment 3, Philipp Noel von Bachmann}
+\title{Assignment 4, Philipp Noel von Bachmann}
 
 
 \begin{document}
@@ -58,20 +58,19 @@
             A quadtree is a tree of nodes, where every node represents a subset
             of an area of interest. Each node can be either an internal or external node.
 
-            An external node is a node in whose area there is only one body. If
-            in the area of a node contains more than one body, it is called an
-            internal node. Instead of having an body that belongs to this node,
-            the node has 4 child nodes which represent the 4 subareas of this
-            nodes area with their correpsonding bodies. To construct a quadtree,
-            we therefore split all nodes recursively until each leaf node is an
-            external node. A node whose area contains no bodies is also
-            considered a external node.
+            An external node is a node whose area contains only one body. If the
+            area contains more than one body, the node is called an internal
+            node. Instead of having an body that belongs to this node, the node
+            has 4 child nodes which represent the 4 subareas. To construct a
+            quadtree, we therefore split all nodes recursively until each leaf
+            node is an external node. A node whose area contains no bodies is
+            also considered a external node.
 
             In general, we represent a node in a structure with the following attributes:
             \begin{itemize}
-                \item lower: coordinate representing the lower edge of the area coverned by the node
-                \item upper: coordinate representing the upper edge of the area coverned by the node
-                \item children: A list containing a pointer to each of the children nodes, if there are any, else a NULL pointer.
+                \item lower: coordinate representing the lower edge of the area covered by the node
+                \item upper: coordinate representing the upper edge of the area covered by the node
+                \item children: A list containing a pointer to each of the children nodes if there are any, else a NULL pointer.
                 \item body: A pointer to the body contained by this node if an external node, else a NULL pointer.
                 \item total mass: A float representing the total mass of the bodies in the area of this node.
                 \item center of mass: A coordinate, representing the center of all bodies contained by this node weighted by their mass.
@@ -90,14 +89,14 @@
             \caption{One environment step}\label{alg:step}
             \begin{algorithmic}[1]
             \Procedure{Step}{}
-            \For {each body in all bodies}
+            \For{each body in all bodies}
             \State force = \Call{compute\_force}{body, tree}
             \EndFor
-            \For {each body in all bodies}
+            \For{each body in all bodies}
             \State update the position of that body
             \EndFor
-            \State replace the old quadtree by a new empty oen
-            \For {each body in all bodies}
+            \State replace the old quadtree by a new empty one
+            \For{each body in all bodies}
             \State Insert the body in the new quadtree
             \EndFor
             \EndProcedure
@@ -117,7 +116,10 @@
             \If {current node is external}
                 \State force = force between body and body of external node
             \Else      
-                \For {child in children of current node}
+                \For{child in children of current node}
+                    \If{child is empty}
+                        \State continue
+                    \EndIf
                     \If {child is far enough away}\label{alg:line6}
                         \State force += force between body and a big body at center of child
                     \Else { need to descent into that child}
@@ -140,16 +142,17 @@
             \item CPU: Apple M1 with 4 performance cores and 4 efficiency cores
             \item GPU: Apple M1 8 core.
             \item Compiler: Slang, Version 13.0.0
+            \item Plugged into power adapter, this makes a big difference!
         \end{itemize}
 
     \subsection{Performance Measurement script}
-        The performance was measured with a simple shell script to enable
-        reproducability. In the script we vary the number of bodies. In the end
-        we also check that the code is correct with the \textbf{compare\_gals} file. Our
-        time measurement was done within the code with the help of the time
-        \textbf{timeoftheday} function. We only started the time measurement
-        immediatly before calling the step loop and stopped the measurement
-        directly after the loop.
+        The performance was measured with shell scripts to enable
+        reproducability. The script mostly loops over the parameters of interest
+        and computes the respective runtime. In the end we also check that the
+        code is correct with the \textbf{compare\_gals} file. Our time
+        measurement was done within the c code with the help of the time
+        \textbf{timeoftheday} function. We started the time measurement after
+        the data loading and stopped the measurement before data writing.
 
 
     \subsection{Calculation of $\theta_{\max}$}
@@ -162,7 +165,7 @@
             The following graph shows the results of the algorithm with no
             optimization for a variable number of bodies, always using 100 steps:
 
-            \begin{tikzpicture}
+            \begin{tikzpicture}[scale=0.7]
                 \begin{axis}[
                     xmin = 10, xmax = 5000,
                     ymin = 0, ymax = 13.0,
@@ -230,7 +233,7 @@
                 \If {current node is external}
                     \State force\_arr[body] += force between body and body of external node
                 \Else      
-                    \For {child in children of current node}
+                    \For{child in children of current node}
                         \If {child is far enough away}
                             \State force\_arr[body] += force between body and a big body at center of child
                         \Else { need to descent into that child}
@@ -254,13 +257,13 @@
             In a setup where we have a lot of distant bodies, the quadtree
             representation might be quite spare in the sense that we have a lof
             of emtpy nodes. Therefore, one idea is that at a minimum amount of
-            nodes in that subtree, instead of descending that tree to just
+            nodes in that subtree, instead of descending that tree we just
             compute the naive update from Assignment 3 with all the bodies in
             that subtree. This would remove iterating over a lot of empty nodes
             and performing a lot of checks. Table \ref{tab:early} shows the
             results for 1000 bodies and 100 steps:\\[10pt] 
-            \noindent\begin{tabular}{c|c|c|c|c}\label{tab:early}
-                minimum N bodies & 0 (baseline) & 5 & 10 & 20 \\
+            \noindent\begin{tabular}{c|c|c|c}\label{tab:early}
+                minimum N bodies & 0 (baseline) & 5 & 10 \\
                 \hline
                 time (s) & 1.119 & 1.370 & 1.704\\
             \end{tabular}\\
@@ -269,8 +272,8 @@
             increases. One reason might be that while there are a lot of empty
             nodes which take time iterating over and a lot of checks to
             determine if we need to descent into that child, these checks also
-            gain time by not needing to descent into their childs. In total,
-            this safes time. Therefore, we decide not to include this
+            gain time by not needing to descent into these childs. In total,
+            this saves time. Therefore, we decide not to include this
             modification in the rest of the optimizations.
             
 
@@ -282,31 +285,31 @@
             that subtree for all bodies, and iterate over a number of subtrees.
 
             \begin{algorithm}[H]
-                \caption{One environment step with subtree update}\label{alg:step}
+                \caption{One environment step with subtree update}
                 \begin{algorithmic}[1]
                 \Procedure{Step}{}
                 \State subtree\_list = list of nodes at a certain level of tree
-                \For {subtree in subtree\_list}
-                    \For {each body in all bodies}
+                \For{subtree in subtree\_list}
+                    \For{each body in all bodies}
                     \State force += \Call{compute\_force}{body, subtree}
                     \EndFor
                 \EndFor
-                \For {each body in all bodies}
+                \For{each body in all bodies}
                 \State update the position of that body
                 \EndFor
                 \State replace the old quadtree by a new empty oen
-                \For {each body in all bodies}
+                \For{each body in all bodies}
                 \State Insert the body in the new quadtree
                 \EndFor
                 \EndProcedure
                 \end{algorithmic}
             \end{algorithm}
-            We investigate the runtime wrt the level of the tree we descent to
-            build the subtree. Descending further down might lower the memory
-            usage and therefore be more likely to fit in one cacheline on the
-            one hand, but remove the chance to prune the tree earlier by
-            approximating bodies as one big body. The results are shown for 1000
-            bodies and 100 steps.
+            We investigate the runtime wrt the level we descent to build the
+            subtree. Descending further down might lower the memory usage and
+            therefore be more likely to fit in one cacheline on the one hand,
+            but remove the chance to prune the tree earlier by approximating
+            bodies as one big body. The results are shown for 1000 bodies and
+            100 steps.\\
 
             \noindent\begin{tabular}{c|c|c|c|c|c|c|c}
                 N levels & 0 (base) & 1 & 2 & 3 & 4 & 5 & 10 \\
@@ -333,7 +336,7 @@
     \subsection{Final code evaluation}
         The figure shows the results for the final code for 100 timesteps
         and a variable number of bodies.
-        \begin{tikzpicture}
+        \begin{tikzpicture}[scale=0.7]
             \begin{axis}[
                 xmin = 10, xmax = 5000,
                 ymin = 0, ymax = 3,
@@ -364,8 +367,163 @@
     linear. This is much better than $O(n^2)$ in Assignment 3. 
 
 \section{Parallel implementation}
-    \subsection{Assignment 3}
+
+
+
     \subsection{Assignment 4}
+        \subsubsection{Code}
+            If we look through the pseudo-code \ref{alg:step} we see that the
+            force computation of each body is independent of all the other
+            bodies. However we noted further, that we can only start updating
+            the postion after we computed all the forces, otherwise we would get
+            incorrect results. Therefore, we modify the main loop to:
+            \begin{algorithm}[H]
+                \caption{One environment step with parallel updates}\label{alg:stepparallel}
+                \begin{algorithmic}[1]
+                    \Procedure{Step}{}
+                    \For{thread in threads}
+                    \State Call thread with \Call {compute\_force\_parallel}{start, end (for this thread)}
+                    \EndFor
+                    \For{thread in threads}
+                    \State \Call {join}{thread}
+                    \EndFor
+                    \For{each body in all bodies}
+                    \State update the position of that body
+                    \EndFor
+                    \State replace the old quadtree by a new empty oen
+                    \For{each body in all bodies}
+                    \State Insert the body in the new quadtree
+                    \EndFor
+                    \EndProcedure
+                \end{algorithmic}
+            \end{algorithm}
+            and add the method:
+            \begin{algorithm}[H]
+                \caption{Force computation done by one thread}
+                \begin{algorithmic}[1]
+                    \Procedure{Compute\_force\_parallel}{start, end}
+                    \For{each body in all bodies between start and end}
+                        \State force = \Call{compute\_force}{body, tree}
+                    \EndFor
+                    \EndProcedure
+                \end{algorithmic}
+            \end{algorithm}
+            Here, we divide the task between threads by giving each thread just
+            a subset of bodies to update. As noted, we have to join the thread
+            before we update our position. An alternative would be to use a
+            barrier so that all threads wait until the others are finished
+            computing the force, and then update the position in parallel. Note
+            that for simplicity we only show the easy pseudo-code here, however
+            all optimizations from the previous section like inplace computation
+            and memory-optimization were also applied.
+
+        \subsubsection{Results}
+            The figure shows the speedup with the number of threads for 1000
+            bodies and 100 steps.
+            \begin{tikzpicture}[scale=0.7]
+                \begin{axis}[
+                    xmin = 1, xmax = 20,
+                    ymin = 0.1, ymax = 0.35,
+                    xtick distance = 1,
+                    ytick distance = 0.01,
+                    grid = both,
+                    minor tick num = 1,
+                    major grid style = {lightgray},
+                    minor grid style = {lightgray!25},
+                    width = 0.8\textwidth,
+                    height = 0.8\textwidth,
+                    xlabel = {Number of bodies},
+                    ylabel = {Time (s)},]
+                
+                
+                % Plot data from a file
+                \addplot[
+                    scatter,
+                    thin,
+                    red,
+                    dashed
+                ] file[skip first] {results_A4_parallel.dat};
+                \end{axis}
+            \end{tikzpicture}
+
+        We can see that initally using more threads decrease our time nearly
+        linear: For 1 thread we get a time of 0.33s and for 2 0.19s. However as
+        we progress further, this increase flattens significantly until at
+        around 8 threads, we come to a stop of increase, which makes sense
+        considering the machine used has 8 cores. Interestingly, we don't get a
+        linear decrease until 8 cores, as one would expect, rather we get an
+        bump at 5 cores. One reason might be the architecture of the
+        machine - The M1 Mac has 4 high performance and 4 efficiency cores, so
+        the high performance cores probably have to wait for the efficiency
+        cores to finish.
+
+        We also found that using a barrier or updating the positions in
+        sequence after the join doesn't matter. This is probably because the
+        operation first of all has linear time complexity and second is very
+        cheap, since we mostly just need to write values to an array.
+
+    \subsection{Assignment 3}
+        \subsubsection{Code}
+            Recall the algorithm for assignment 3:
+            \begin{algorithm}[H]
+                \caption{One environment step, Assignment 3}
+                \begin{algorithmic}[1]
+                \Procedure{Step}{}
+                \For{each body in all bodies}
+                    \For{each second body in all bodies}
+                        \State force[body] += \Call{compute\_force}{body, second body}
+                    \EndFor
+                \EndFor
+                \For{each body in all bodies}
+                \State update the position of that body
+                \EndFor
+                \EndProcedure
+                \end{algorithmic}
+            \end{algorithm}
+
+            Here, we see that we can parallelize the force computation step. However
+            we need to wait with the update step, since otherwise force
+            computations can be wrong. This is either achieved by calling join
+            before the update and then updating in serial or implementing a
+            barrier which lets all threads wait for the others to complete
+            before the update, similar to Assignment 4.
+
+        \subsubsection{Results}
+            The figure shows the speedup with the number of threads for 1000
+            bodies and 100 steps.
+            \begin{tikzpicture}[scale=0.7]
+                \begin{axis}[
+                    xmin = 1, xmax = 20,
+                    ymin = 0.01, ymax = 0.2,
+                    xtick distance = 1,
+                    ytick distance = 0.01,
+                    grid = both,
+                    minor tick num = 1,
+                    major grid style = {lightgray},
+                    minor grid style = {lightgray!25},
+                    width = 0.8\textwidth,
+                    height = 0.8\textwidth,
+                    xlabel = {Number of bodies},
+                    ylabel = {Time (s)},]
+                
+                
+                % Plot data from a file
+                \addplot[
+                    scatter,
+                    thin,
+                    red,
+                    dashed
+                ] file[skip first] {results_A3_parallel.dat};
+                \end{axis}
+            \end{tikzpicture}
+
+            We see the same pattern as in Assignment 4, when going over 4 cores
+            our runtime rises again due to the same reasons. In general, we see
+            that we surprisingly achieve a lower runtime however. This could be
+            because we use mostly standard functions, thus making it easier for
+            the compiler to do optimizations.
+
+
 
             
 
@@ -373,6 +531,11 @@
     \begin{itemize}
         \item For the timing, the \textbf{get\_wall\_seconds} from Lab06, exercise 7
         \item For data reading, the function \textbf{read\_doubles\_from\_file} from \textbf{compare\_gal\_files}, but slightly modified
+        \item For the barrier, the code from Lab09, exercise 4
+        \item For the parallel assignment 3, the code from Assignment 3
+        \item To get more familar with the Barnes-Hut, the explanation from
+        \url{https://www.cs.princeton.edu/courses/archive/fall03/cs126/assignments/barnes-hut.html},
+        however no parts of the code.
     \end{itemize}
 
 

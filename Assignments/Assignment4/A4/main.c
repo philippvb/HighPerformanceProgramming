@@ -1,4 +1,3 @@
-// #include "read_data.h"
 #include "quadtree.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -159,7 +158,6 @@ int main(int argc, char *argv[]){
     for(int i=0; i<n_bodies; i++){
     insert_body(&tree, p+i);
     }
-    // print_tree(tree, 0);
     for(int i=0; i<steps; i++){
       step(p, accelerations, n_bodies, &tree, G);
     }
