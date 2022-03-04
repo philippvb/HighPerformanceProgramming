@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
-#define NODE_LEVEL 0
+#define NODE_LEVEL 4
 
 const int body_length = 6;
 const double epsilon = 0.001;

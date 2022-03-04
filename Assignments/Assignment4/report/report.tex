@@ -50,10 +50,9 @@
             also allows for easy reading of the input gal file, since we can
             directly read each block into a body struct.
 
-            In later parts \ref{sec:mem_usage}, we also keep track of the
-            accelerations of each body in an array of coordinates. We opt not to
-            integrate this into the body struct to be able to retain easy writing
-            and reading of files.
+            We also need to keep track of the accelerations of each body in an
+            array of coordinates. We opt not to integrate this into the body
+            struct to be able to retain easy writing and reading of .gal files.
 
         \subsubsection{Quadtree}
             A quadtree is a tree of nodes, where every node represents a subset
@@ -78,26 +77,64 @@
                 \item center of mass: A coordinate, representing the center of all bodies contained by this node weighted by their mass.
             \end{itemize}
 
-    \subsection{Structure}
-        The baseline code consists of the following modules/functions:
+    \subsection{Overview of Algorithm}
+        In general, we have the following three steps of our main function:
         \begin{itemize}
-            \item utility functions for coordinates: compute direction and compute norm 
-            \item compute force: computes the force that acts onto a body
-            \item compute body update: computes the update step for each body
-            \item step: handles the update step, calls the subroutines. Only this function actually changes the state of our bodys.
+            \item Load the data
+            \item Perform the simulation
+            \item Safe the output data
         \end{itemize}
+        The main part is the simulation, which is done by recursively calling
+        the step function which progresses the simulation by one timestep.
+        \begin{algorithm}[H]
+            \caption{One environment step}\label{alg:step}
+            \begin{algorithmic}[1]
+            \Procedure{Step}{}
+            \For {each body in all bodies}
+            \State force = \Call{compute\_force}{body, tree}
+            \EndFor
+            \For {each body in all bodies}
+            \State update the position of that body
+            \EndFor
+            \State replace the old quadtree by a new empty oen
+            \For {each body in all bodies}
+            \State Insert the body in the new quadtree
+            \EndFor
+            \EndProcedure
+            \end{algorithmic}
+        \end{algorithm}
+        A crucial aspect is that we need to perform all force computations
+        before we update the positions of our body, which will especially become
+        important later for parallelization. In our initial implementation, we
+        stick to rebuilding the quadtree after each step, instead of updating
+        it. See also Section \ref{sec:Runtime} for how this affects the runtime.
+        
+        The force is computed by descending the quadtree:
+        \begin{algorithm}[H]
+            \caption{Force computation}\label{alg:compute_force}
+            \begin{algorithmic}[1]
+            \Procedure{compute\_force}{body, current node}
+            \If {current node is external}
+                \State force = force between body and body of external node
+            \Else      
+                \For {child in children of current node}
+                    \If {child is far enough away}\label{alg:line6}
+                        \State force += force between body and a big body at center of child
+                    \Else { need to descent into that child}
+                        \State force += \Call{compute\_force}{body, child}
+                    \EndIf
+            \EndFor
+            \EndIf
+            \State \Return force
+            \EndProcedure
+            \end{algorithmic}
+        \end{algorithm}
+        Here, we safe the most amount of time compared to the naive algorithm
+        from Assignment 3 in line \ref{alg:line6}, where we treat all bodies in the child as
+        one big one and thus don`t need to descent into that child.
 
-        In the final code, we restructured it to the following, see mostly section \ref{sec:mem_usage} for details.
-        \begin{itemize}
-            \item utility functions for coordinates: compute direction and compute norm 
-            \item compute acceleration: computes the acceleration that acts onto a body
-            \item update body: computes the update step for each body and applies it
-            \item step: calls the subroutines and iterates over all bodys
-        \end{itemize}
 
-
-\section{Performance and Discussion}
-
+\section{Performance and Discussion for Serial code}
     \subsection{Hardware information}
         \begin{itemize}
             \item CPU: Apple M1 with 4 performance cores and 4 efficiency cores
@@ -114,32 +151,54 @@
         immediatly before calling the step loop and stopped the measurement
         directly after the loop.
 
-    \subsection{Performance and Results}
 
-        \subsection{Calculation of $\theta_{\max}$}
+    \subsection{Calculation of $\theta_{\max}$}
         
-            We calculate $\theta_{\max}$ as described in the Assignment, Section
-            5.2. This results in $\theta_{\max} = 0.25$, where an $\text{\textbf{pos\_maxdiff}}
-            = 0.000885759450$ was achieved.
+        We calculate $\theta_{\max}$ as described in the Assignment, Section
+        5.2. This results in $\theta_{\max} = 0.25$, where an
+        $\text{\textbf{pos\_maxdiff}} = 0.000885759450$ was achieved.
+    \subsection{Results}
+        \subsubsection{Baseline}\label{sec:Baseline}
+            The following graph shows the results of the algorithm with no
+            optimization for a variable number of bodies, always using 100 steps:
 
-        \subsection{Baseline results}\label{sec:Baseline}
-            The following table shows the results of the algorithm with no
-            optimization for a variable number of bodies:
-            \noindent\begin{tabular}{c|c|c|c}
-                N bodies & 10 & 100 & 1000 \\
-                \hline
-                time (s) & 0.003 & 0.121 & 3.943\\
-            \end{tabular}
+            \begin{tikzpicture}
+                \begin{axis}[
+                    xmin = 10, xmax = 5000,
+                    ymin = 0, ymax = 13.0,
+                    xtick distance = 1000,
+                    ytick distance = 1,
+                    grid = both,
+                    minor tick num = 1,
+                    major grid style = {lightgray},
+                    minor grid style = {lightgray!25},
+                    width = 0.8\textwidth,
+                    height = 0.8\textwidth,
+                    xlabel = {Number of bodies},
+                    ylabel = {Time (s)},]
+                 
+                 
+                % Plot data from a file
+                \addplot[
+                    scatter,
+                    thin,
+                    red,
+                    dashed
+                ] file[skip first] {results.dat};
+                 
+                \end{axis}
+                 
+            \end{tikzpicture}
+            
 
-            Compared to the last assignment, these times are same or worse for
-            $N=10, 100$ and better for $N=1000$. This hints that while we have a
-            constant amount of work which might be higher compared to Assignment
-            3, the amount of work that scales with the number of bodies gets
-            reduced. The next section will dive further into this.
+            Compared to the last assignment, these result are far quicker than
+            the last assignment, for example for N=1000 we achieve 1.491261s
+            compared to 6.502 in the last assignment. For large N, we see that
+            the runtime becomes nearly linear.
 
-        \subsection{Analysis of runtime}
-            This section analyzes the runtime of the two main parts of the
-            algorithm:
+        \subsubsection{Analysis of runtime}\label{sec:Runtime}
+            This section analyzes the runtime of the two main parts of algorithm
+            \ref{alg:step}:
             \begin{itemize}
                 \item Tree: For the Barnes-Hut, we need to build and update the tree after each timestep.
                 \item Body update: For each step, we need to update the forces and the body positions etc.
@@ -147,58 +206,167 @@
             \noindent\begin{tabular}{c|c|c|c}
                 N bodies & 10 & 100 & 1000 \\
                 \hline
-                Tree time (s) & 0.002 & 0.013 & 0.145 \\
-                Body update time (s) & 0.005 & 0.121 & 3.814\\
-            \end{tabular}
-            Here, we see that while for $N=10$, we spend roughly a third of the
-            time on rebuilding the tree, this gets way less for higher $N$. This
-            explains the results of \ref{sec:Baseline}, as for small $N$, adding
-            a tree creates overhead. However for large $N$, this overhead
-            becomes negligible and we benefit from the reduced cost for the body
-            update.
+                Tree time (s) & 0.0003 & 0.003 & 0.042 \\
+                Body update time (s) & 0.001 & 0.045 & 1.449\\
+            \end{tabular}\\[10pt]
+            We see that we spend most of the time on computing the update steps
+            for the bodies and a negligible amount of time on the rebuilding of
+            the tree. Therefore, we decide not to optimize the tree further by
+            for example updating the tree instead of rebuilding, since the
+            possible time to gain is very little. Instead we will focus on
+            optimizing the force computation and position update of our body.
 
         \subsubsection{Inplace computation}
-            In the baseline, we compute the force recursively if we need to descent into the children by:
+            In the baseline algorithm \ref{alg:compute_force}, we compute the
+            force recursively if we need to descent into the children. However,
+            this creates a lot of unneeded force objects, that we need to
+            recursively pass around. Instead, we can just add the force to a
+            global array of forces which gets initialized to 0 at the beginning
+            of every step.
             \begin{algorithm}[H]
-                \caption{Force computation}\label{euclid}
+                \caption{Force computation, assuming global array force\_arr initialized to 0}\label{alg:compute_force_inplace}
                 \begin{algorithmic}[1]
-                \Procedure{compute\_force}{}
-                \If {current node has body}
-                    \State force = force between body and child body of node
+                \Procedure{compute\_force\_Inplace}{body, current node}
+                \If {current node is external}
+                    \State force\_arr[body] += force between body and body of external node
                 \Else      
-                    \For {child in childs of current node}
-                        \State force += compute\_force with child
+                    \For {child in children of current node}
+                        \If {child is far enough away}
+                            \State force\_arr[body] += force between body and a big body at center of child
+                        \Else { need to descent into that child}
+                            \State \Call{compute\_force\_inplace}{body, child}
+                        \EndIf
                 \EndFor
                 \EndIf
-                \State \Return force
                 \EndProcedure
                 \end{algorithmic}
             \end{algorithm}
-            However, this creates a lot of unneeded force objects. Instead, we
-            can just add the force inplace to a global array. This leads to the
-            following results:\\
+            This leads to the following results:\\
             \noindent\begin{tabular}{c|c|c|c}
                 N bodies & 10 & 100 & 1000 \\
                 \hline
-                time (s) & 0.006 & 0.117 & 3.563\\
+                time (s) & 0.0003 & 0.004 & 1.117\\
             \end{tabular}\\
-            We see that for $N=100$, this reduces the computation time by
-            roughly 0.4s.
+            We see that for $N=1000$, this reduces the computation time from
+            1.491261s to 1.117s.
 
-        \section{Memory usage}
-            For large galaxies, they will not all fit in one cacheline. However
-            we can start at lower levels and compute all forces per level rathern for all.
-            This leads to\\
-            \noindent\begin{tabular}{c|c|c|c|c}
-                N levels & 0 (base) & 1 & 3 & 5 \\
+        \subsubsection{Early stopping}
+            In a setup where we have a lot of distant bodies, the quadtree
+            representation might be quite spare in the sense that we have a lof
+            of emtpy nodes. Therefore, one idea is that at a minimum amount of
+            nodes in that subtree, instead of descending that tree to just
+            compute the naive update from Assignment 3 with all the bodies in
+            that subtree. This would remove iterating over a lot of empty nodes
+            and performing a lot of checks. Table \ref{tab:early} shows the
+            results for 1000 bodies and 100 steps:\\[10pt] 
+            \noindent\begin{tabular}{c|c|c|c|c}\label{tab:early}
+                minimum N bodies & 0 (baseline) & 5 & 10 & 20 \\
                 \hline
-                time (s) &  3.563 & 3.353 & 3.227 & 3.632\\
-            \end{tabular}
+                time (s) & 1.119 & 1.370 & 1.704\\
+            \end{tabular}\\
 
+            We don't get the expected result, instead we see that our time
+            increases. One reason might be that while there are a lot of empty
+            nodes which take time iterating over and a lot of checks to
+            determine if we need to descent into that child, these checks also
+            gain time by not needing to descent into their childs. In total,
+            this safes time. Therefore, we decide not to include this
+            modification in the rest of the optimizations.
+            
 
-        \section{TODO}
-        ideas:
-        - 
+        \subsubsection{Memory usage}
+            The quadtree for large galaxies will not fit into one cacheline, and
+            we spend a lot of time loading new bodies in our memory. Therefore,
+            the idea is to instead of updating each body in serial, load a
+            subtree into the memory and then perform the force computation with
+            that subtree for all bodies, and iterate over a number of subtrees.
+
+            \begin{algorithm}[H]
+                \caption{One environment step with subtree update}\label{alg:step}
+                \begin{algorithmic}[1]
+                \Procedure{Step}{}
+                \State subtree\_list = list of nodes at a certain level of tree
+                \For {subtree in subtree\_list}
+                    \For {each body in all bodies}
+                    \State force += \Call{compute\_force}{body, subtree}
+                    \EndFor
+                \EndFor
+                \For {each body in all bodies}
+                \State update the position of that body
+                \EndFor
+                \State replace the old quadtree by a new empty oen
+                \For {each body in all bodies}
+                \State Insert the body in the new quadtree
+                \EndFor
+                \EndProcedure
+                \end{algorithmic}
+            \end{algorithm}
+            We investigate the runtime wrt the level of the tree we descent to
+            build the subtree. Descending further down might lower the memory
+            usage and therefore be more likely to fit in one cacheline on the
+            one hand, but remove the chance to prune the tree earlier by
+            approximating bodies as one big body. The results are shown for 1000
+            bodies and 100 steps.
+
+            \noindent\begin{tabular}{c|c|c|c|c|c|c|c}
+                N levels & 0 (base) & 1 & 2 & 3 & 4 & 5 & 10 \\
+                \hline
+                time (s) &  1.146 & 1.074 & 1.049 & 1.028 & 1.011 & 1.173 & 2.671\\
+            \end{tabular}\\
+
+            We see that in the best case, this speeds up computation by 0.13s
+            for a level of 4. However as we further increase the level, we can't
+            prune subtrees anymore and loose time again. In the end, we
+            therefore fix the level at 4.
+
+        \subsubsection{Optimization flags}
+            Finally, we use optimization flags to optimize the code further, as
+            before results are shown for 1000 bodies and 100 steps.\\
+            \noindent\begin{tabular}{c|c|c|c}
+                 & No flags & -O2 & -O3 \\
+                \hline
+                time (s) & 1.022 & 0.337 & 0.325\\ 
+            \end{tabular}\\
+            We see that we achieve the best performance using -O3, therefore we
+            use that option from now on.
+
+    \subsection{Final code evaluation}
+        The figure shows the results for the final code for 100 timesteps
+        and a variable number of bodies.
+        \begin{tikzpicture}
+            \begin{axis}[
+                xmin = 10, xmax = 5000,
+                ymin = 0, ymax = 3,
+                xtick distance = 1000,
+                ytick distance = 1,
+                grid = both,
+                minor tick num = 1,
+                major grid style = {lightgray},
+                minor grid style = {lightgray!25},
+                width = 0.8\textwidth,
+                height = 0.8\textwidth,
+                xlabel = {Number of bodies},
+                ylabel = {Time (s)},]
+            
+            
+            % Plot data from a file
+            \addplot[
+                scatter,
+                thin,
+                red,
+                dashed
+            ] file[skip first] {results_final.dat};
+            
+            \end{axis}
+        \end{tikzpicture}
+
+    We can see that for a large number of bodies, the runtime becomes nearly
+    linear. This is much better than $O(n^2)$ in Assignment 3. 
+
+\section{Parallel implementation}
+    \subsection{Assignment 3}
+    \subsection{Assignment 4}
+
             
 
 \section{References}
