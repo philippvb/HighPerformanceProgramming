@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
-#define MIN_BODIES 10
 #define NODE_LEVEL 0
 
 const int body_length = 6;
@@ -62,20 +61,6 @@ double get_wall_seconds(){
   return seconds;
 }
 
-void compute_all(body_t cur_body, node_t cur_node, coordinate_t *body_acc){
-    body_t** all_child_bodies = malloc(cur_node.n_bodies * sizeof(body_t*));
-    int n_child_bodies = 0;
-    get_all_bodies(cur_node, all_child_bodies, &n_child_bodies);
-    coordinate_t direction;
-    double r_cube;
-    for(int i=0; i<n_child_bodies; i++){
-      direction = substract(cur_body.pos, all_child_bodies[i]->pos);
-      r_cube = norm(direction) + epsilon;
-      r_cube = r_cube * r_cube * r_cube;
-      *body_acc = add(*body_acc, multiply(direction, all_child_bodies[i]->mass / r_cube));
-    }
-    free(all_child_bodies);
-}
 
 void compute_force(body_t* body, node_t* tree, coordinate_t *body_acc){
   coordinate_t direction;
@@ -91,9 +76,6 @@ void compute_force(body_t* body, node_t* tree, coordinate_t *body_acc){
     return;
   }
   else if (tree->children != NULL){
-    if(tree->n_bodies < MIN_BODIES){
-      return compute_all(*body, *tree, body_acc);
-    }
     for(int i=0; i < SUBDIVISIONS*SUBDIVISIONS; i++){
       // empty node
       if((tree->children[i].children == NULL) && (tree->children[i].body == NULL)) continue;
