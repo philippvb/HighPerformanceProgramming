@@ -184,7 +184,7 @@ void step(body* p, coordinate* acc, int n_bodies, double G){
 
 int main(int argc, char *argv[]){
     if(argc != 7) {
-    printf("Give 6 input args: N filename n_steps delta_t graphics N_threads\n");
+    printf("Give 6 input args: N filename n_steps delta_t N_threads graphics\n");
     return -1;
     }
     n_bodies = atoi(argv[1]);
@@ -192,8 +192,8 @@ int main(int argc, char *argv[]){
     const char* output_file = "result.gal";
     int steps = atoi(argv[3]);
     timestep = atof(argv[4]);
-    int use_graphics = atoi(argv[5]); // don't use since they dont work
-    n_threads = atof(argv[6]);
+    n_threads = atof(argv[5]);
+    int use_graphics = atoi(argv[6]); // don't use since they dont work
     read_doubles_from_file(&body_list, fileName, n_bodies);
 
     pthread_cond_init(&mysignal, NULL);
@@ -204,11 +204,9 @@ int main(int argc, char *argv[]){
     threads = malloc(n_threads * sizeof(pthread_t));
     thread_data = malloc(n_threads * sizeof(step_args_t));
     double block_size = (double) n_bodies/ (double) n_threads;
-    // printf("Block size %f\n", block_size);
     for(int i=0; i<n_threads; i++){
         thread_data[i].start = (int) i * block_size;
         thread_data[i].end = (int) ((i+1) * block_size);
-        // printf("Start %d, end %d\n", thread_data[i].start, thread_data[i].end);
     }
     double start = get_wall_seconds();
     for(int s=0; s<steps; s++){

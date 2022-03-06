@@ -1,12 +1,12 @@
-OFLAGS = -O3 -lm
-main: quadtree.o main.o
-	gcc -o galsim quadtree.o main.o -Wall $(OFLAGS)
+OFLAGS = -O3 -lm -lpthread
+galsim: quadtree.o main.o
+	gcc -o galsim quadtree.o main.o $(OFLAGS)
 
 main.o: main.c quadtree.o
-	gcc -c main.c -Wall $(OFLAGS)
+	gcc -c main.c $(OFLAGS)
 
 quadtree.o: quadtree.c
-	gcc -c quadtree.c -Wall $(OFLAGS)
+	gcc -c quadtree.c  $(OFLAGS)
 
 
 clean:

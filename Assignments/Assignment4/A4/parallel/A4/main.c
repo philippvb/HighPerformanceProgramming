@@ -10,7 +10,7 @@
 
 const int body_length = 6;
 const double epsilon = 0.001;
-const double threshold = 0.25;
+double threshold;
 double timestep;
 
 body_t* body_list;
@@ -201,8 +201,8 @@ void step(){
 
 
 int main(int argc, char *argv[]){
-    if(argc != 7) {
-    printf("Give 6 input args: N filename n_steps delta_t graphics N_threads\n");
+    if(argc != 8) {
+    printf("Give 7 input args: N filename n_steps delta_t threshold N_threads graphics\n");
     return -1;
     }
     n_bodies = atoi(argv[1]);
@@ -210,22 +210,17 @@ int main(int argc, char *argv[]){
     const char* output_file = "result.gal";
     int steps = atoi(argv[3]);
     timestep = atof(argv[4]);
-    int use_graphics = atoi(argv[5]); // don't use since they dont work
-    n_threads = atof(argv[6]);
-    //   if(n_bodies%n_threads!=0){
-    //     printf("Number of bodies is not divisible by number of threads!\n");
-    //     return -1;
-    // }
+    threshold = atof(argv[5]);
+    n_threads = atoi(argv[6]);
+    int use_graphics = atoi(argv[7]); // don't use since they dont work
     pthread_cond_init(&mysignal, NULL);
     pthread_mutex_init(&lock, NULL);
     threads = malloc(n_threads * sizeof(pthread_t));
     thread_data = malloc(n_threads * sizeof(step_args_t));
     double block_size = (double) n_bodies/ (double) n_threads;
-    // printf("Block size %f\n", block_size);
     for(int i=0; i<n_threads; i++){
         thread_data[i].start = (int) i * block_size;
         thread_data[i].end = (int) ((i+1) * block_size);
-        // printf("Start %d, end %d\n", thread_data[i].start, thread_data[i].end);
     }
     accelerations = malloc(sizeof(coordinate_t) * n_bodies);
     G = ((double) 100 )/n_bodies;

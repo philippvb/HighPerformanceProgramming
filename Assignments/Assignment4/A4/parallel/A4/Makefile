@@ -1,4 +1,4 @@
-OFLAGS = -O3
+OFLAGS = -O3 -lm -lpthread
 Subdir = ../../
 main: quadtree.o main.o
 	gcc -o galsim quadtree.o main.o -Wall $(OFLAGS)

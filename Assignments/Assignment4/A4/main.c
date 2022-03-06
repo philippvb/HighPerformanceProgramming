@@ -7,7 +7,7 @@
 
 const int body_length = 6;
 const double epsilon = 0.001;
-const double threshold = 0.25;
+double threshold;
 double timestep;
 
 double total_update = 0;
@@ -139,8 +139,8 @@ void step(body_t* p, coordinate_t* acc, int n_bodies, node_t* tree, double G){
 
 
 int main(int argc, char *argv[]){
-    if(argc != 6) {
-    printf("Give 5 input args: N filename n_steps delta_t graphics\n");
+    if(argc != 7) {
+    printf("Give 6 input args: N filename n_steps delta_t threshold graphics\n");
     return -1;
     }
     int n_bodies = atoi(argv[1]);
@@ -148,7 +148,8 @@ int main(int argc, char *argv[]){
     const char* output_file = "result.gal";
     int steps = atoi(argv[3]);
     timestep = atof(argv[4]);
-    int use_graphics = atoi(argv[5]); // don't use since they dont work
+    threshold = atof(argv[5]);
+    int use_graphics = atoi(argv[6]); // don't use since they dont work
     coordinate_t *accelerations = malloc(sizeof(coordinate_t) * n_bodies);
     const double G = ((double) 100 )/n_bodies;
     body_t *p;
@@ -156,7 +157,7 @@ int main(int argc, char *argv[]){
     double start = get_wall_seconds();
     node_t tree = create_inital();
     for(int i=0; i<n_bodies; i++){
-    insert_body(&tree, p+i);
+      insert_body(&tree, p+i);
     }
     for(int i=0; i<steps; i++){
       step(p, accelerations, n_bodies, &tree, G);
