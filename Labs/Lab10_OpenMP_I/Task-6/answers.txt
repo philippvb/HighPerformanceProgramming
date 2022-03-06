@@ -1,0 +1,9 @@
+- for a better speedup, we could give threads that compute higher numbers less number to iterate over
+- for 100000 we have times:
+    - 1: 1.654401s
+    - 4: 0.715004s
+    - 8: 0.411236s
+    - 12: 0.334779s
+    - 20: 0.272513s
+- speedup still if more threads than cores, reason probably ILP
+- we see that the speedup is not linear even for small threads, reason: work imbalance problem

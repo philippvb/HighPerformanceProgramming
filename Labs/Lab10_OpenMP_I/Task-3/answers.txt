@@ -1,0 +1,3 @@
+- max_threads vs num_threads:
+    - num_threads: how many threads exist in current region
+    - max_threads: how many threads could be created in current region, for outer level same as NUM_THREADS variable

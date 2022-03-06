@@ -1,0 +1,3 @@
+- if we use -fopenmp, we will get as mayn outputs as threads
+- if we change number of threads change number of outputs
+- if we remove n_threads, we get 8 (same as cores?)

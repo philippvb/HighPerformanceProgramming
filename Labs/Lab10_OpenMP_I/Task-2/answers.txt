@@ -1,0 +1,10 @@
+- we need a long int since the loop variable max value is too large for int (max: 2,147,483,647)
+- execution time:
+    1: 10.23
+    4: 10.311673
+    5: 10.217040s
+    8: 10.504926s
+    10: 12.796438s
+
+- see same time for 1 to 8 cores, (interesting, since we have only 4 high-performance-cores)
+- if we go over 8, time increases

@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include "sort_funcs.h"
+#include <omp.h>
+#include <stdio.h>
 
 void bubble_sort(intType* list, int N) {
   int i, j;
@@ -14,24 +16,44 @@ void bubble_sort(intType* list, int N) {
     }
 }
 
-void merge_sort(intType* list_to_sort, int N) {
+void merge_sort(intType* list_to_sort, int N, int num_threads) {
   if(N == 1) {
     // Only one element, no sorting needed. Just return directly in this case.
     return;
   }
   int n1 = N / 2;
   int n2 = N - n1;
-  // Allocate new lists
-  intType* list1 = (intType*)malloc(n1*sizeof(intType));
-  intType* list2 = (intType*)malloc(n2*sizeof(intType));
+  // // Allocate new lists
+  intType* list1 = (intType*)malloc(N*sizeof(intType));
+  // intType* list2 = (intType*)malloc(n2*sizeof(intType));
+  intType* list2 = list1 + n2;
   int i;
-  for(i = 0; i < n1; i++)
-    list1[i] = list_to_sort[i];
-  for(i = 0; i < n2; i++)
-    list2[i] = list_to_sort[n1+i];
   // Sort list1 and list2
-  merge_sort(list1, n1);
-  merge_sort(list2, n2);
+  // sort in serial
+  if (num_threads < 2){
+    for(i = 0; i < n1; i++)
+        list1[i] = list_to_sort[i];
+    for(i = 0; i < n2; i++)
+      list2[i] = list_to_sort[n1+i];
+    merge_sort(list1, n1, 0);
+    merge_sort(list2, n2, 0);
+  }
+  // sort in parallel
+  else{
+    #pragma omp parallel num_threads(2)
+      {
+        if (omp_get_thread_num() == 1){
+          for(i = 0; i < n1; i++)
+            list1[i] = list_to_sort[i];
+          merge_sort(list1, n1, (num_threads)/2);
+        }
+        else{
+          for(i = 0; i < n2; i++)
+            list2[i] = list_to_sort[n1+i];
+          merge_sort(list2, n2, (num_threads)/2);
+        }
+    }
+  }
   // Merge!
   int i1 = 0;
   int i2 = 0;
@@ -52,6 +74,6 @@ void merge_sort(intType* list_to_sort, int N) {
   while(i2 < n2)
     list_to_sort[i++] = list2[i2++];
   free(list1);
-  free(list2);
+  // free(list2);
 }
 

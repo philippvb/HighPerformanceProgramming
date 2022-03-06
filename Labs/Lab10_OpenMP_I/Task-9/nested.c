@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
 
 long int sum = 0;
 int N = 100000;
@@ -19,9 +20,16 @@ int main(int argc, char **argv) {
   int nThreads = atoi(argv[1]);
 
   printf("This is the main() function before the parallel block, nThreads = %d\n", nThreads);
-
+  omp_set_nested(1);
 #pragma omp parallel num_threads(nThreads)
-  the_thread_func();
+{
+  printf("N threads in outer %d\n", omp_get_num_threads());
+  #pragma omp parallel num_threads(nThreads)
+  { 
+    printf("N threads in inner %d\n", omp_get_num_threads());
+    the_thread_func();
+  }
+}
   
   printf("This is the main() function after the parallel block\n");
 

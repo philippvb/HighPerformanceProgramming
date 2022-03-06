@@ -9,6 +9,7 @@ long int thread_func_A() {
   long int sum = 0;
   for(i = 0; i < NA; i++)
     sum += 7;
+  printf("Finished thread A\n");
   return sum;
 }
 
@@ -17,6 +18,7 @@ long int thread_func_B() {
   long int sum = 0;
   for(i = 0; i < NB; i++)
     sum += 7;
+  printf("Finished thread B\n");
   return sum;
 }
 
@@ -25,7 +27,7 @@ int main() {
 
   long int result_A;
   long int result_B;
-
+  double start = omp_get_wtime();
 #pragma omp parallel num_threads(2)
   {
     int id = omp_get_thread_num();
@@ -34,6 +36,7 @@ int main() {
     else
       result_B = thread_func_B();
   }
+  printf("Execution took %fs\n", omp_get_wtime() - start);
 
   printf("This is the main() function after the parallel block.\n");
 

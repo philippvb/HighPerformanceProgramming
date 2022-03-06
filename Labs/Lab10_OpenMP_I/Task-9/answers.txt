@@ -1,0 +1,14 @@
+- we see that if nested is disabled, our inner parallelization is ignored
+
+merge sort:
+    - n= 10000000
+    - baseline: 1.821
+    - 2: 0.882
+    - 4: 0.580
+    - 8: 0.448
+
+with just one malloc:
+    - 4: 0.411
+    - 8: 0.391
+we get a greater speedup because we dont need to synchronize malloc and free
+

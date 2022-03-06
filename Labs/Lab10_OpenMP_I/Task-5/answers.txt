@@ -1,0 +1,4 @@
+- most uneven split: 2.727273s
+- most even: 1.373267s
+- as expected, around half
+- cpu usage drops when one thread finishes

@@ -6,10 +6,13 @@ typedef struct DataForThread {
   double B;
   int x;
   int y;
+  double result;
 } DataForThread_t;
 
-void thread_func(DataForThread_t* p) {
+double thread_func(DataForThread_t* p) {
   printf("This is inside thread_func()!\n");
+  printf("%f, %f, %d, %d\n", p->A, p->B, p->x, p->y);
+  return p->A + p->B;
 }
 
 int main(int argc, char** argv) {
@@ -33,7 +36,8 @@ int main(int argc, char** argv) {
        by several threads. Get ID of current thread. */
     int id = omp_get_thread_num();
     /* Call thread_func and give it a pointer to arr[id] as input. */
-    thread_func(&arr[id]);
+    arr[id].result = thread_func(&arr[id]);
+    printf("Result from thread %d is: %f\n", id, arr[id].result);
   }
 
   return 0;
