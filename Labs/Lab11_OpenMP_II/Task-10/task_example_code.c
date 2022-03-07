@@ -29,14 +29,20 @@ int main(int argc, char *argv[]) {
   double resultVec[totCount];
 
   int count = 0;
-    for(int i = 0; i < 2; i++)
-      for(int j = 0; j < 3; j++)
-	for(int k = 0; k < 2; k++)
-	  for(int l = 0; l < 3; l++)
-	    for(int m = 0; m < 2; m++) {
-	      f(i, j, k, l, m, N, &resultVec[count]);
-	      count++;
-	    }
+  #pragma omp parallel num_threads(8)
+  {
+    #pragma omp single
+      {for(int i = 0; i < 2; i++)
+        for(int j = 0; j < 3; j++)
+        for(int k = 0; k < 2; k++)
+          for(int l = 0; l < 3; l++)
+            for(int m = 0; m < 2; m++) {
+              #pragma omp task
+              {f(i, j, k, l, m, N, &resultVec[count]);}
+              count++;
+        }
+      }
+  }
 
   assert(count == totCount);
 

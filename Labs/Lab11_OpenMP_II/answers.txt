@@ -1,0 +1,70 @@
+Task1:
+    - prediction: as a is private, we should see the same result for all threads, namely 120
+    - actual outcome: mostly a = 20, but sometimes weird numbers, happens because not initialized
+    - if we use firstprivate, works as expected
+    - lastprivate is used in loops where we want the global variable to take the value of the final thread
+
+Task2:
+    - the section keyword means that each section should be executed once but
+    openmp can decide which thread executes this section
+    - timing with extra function: 3.07 for 3 threads, 5.8 for 2 threads
+    - this is because for 2 threads each takes one of the functions but one
+    thread has to do the resulting, whereas for 3 all can do them in parallel
+
+Task3:
+    - without openmp: 5.911s, sum = 19999.749173
+    - with openmp: 2.079s, sum = 19999.749173, 2 threads, 1.106 for 3
+    - we see that result stays correct and we get expected reduction in runtime
+
+    - loop iterations are not independent
+    - sum = 83771.675509 without parallel
+    - sum = 70153.797575 with -> result changes, also between runs, because the
+    iterations are not executed in serial so value of y can change for speciifc
+    iteration
+
+Task4:
+    - independent since we use the same array but different positions
+    - time:
+        - 1: 14.369347
+        - 4: 6.293757
+        - 8: 3.340838
+    - balacing:
+        - static: 3.328678
+        - dynamic: 1.861551
+        - guided: 1.813391
+
+Task5:
+    - works as expected, 2.362 for 1 and 0.610 for 4
+    
+Task6:    
+    - 0.715004s for 4 threads, same time
+    - dynamic schedule: 0.444689s, guided nearly same
+
+Task7:
+    - sys time, user time:
+    - n=1
+        80000, 80: 5.063, 5.02
+        800, 8000: 5.685, 5.66
+        8, 800000: 5.514, 5.48
+    - n=4
+        80000, 80: 1.390, 5.12
+        800, 8000: 1.647, 6.22
+        8, 800000: 1.699, 6.28
+
+    we see that user time increases when using small dims -> false sharing
+
+Task8:
+    - baseline: 3.082, 0.948 with 03
+    - we get a min time of 0.639, 0.348 with 03
+    - howveer result is wrong
+
+Task9:
+    - n=40, 0.827 for 1, 0.343 for 8, 0.275 for 20
+    - improves more with more threads
+    - dont reach ideal speedup since load imbalance because we branch off for every call we make
+
+Task10:
+    N=10000
+    - baseline: 0.622
+    - 4: 0.410
+    - 8: 0.339
