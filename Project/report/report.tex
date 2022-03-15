@@ -1,0 +1,156 @@
+\documentclass[a4paper]{scrartcl}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{pgfplots}
+\usepackage{amsmath, enumerate, amssymb, multirow, fancyhdr, color, graphicx, lastpage, listings, tikz, pdflscape, subfigure, float, polynom, hyperref, tabularx, forloop, geometry, listings, fancybox, tikz, forest, tabstackengine, cancel, multicol, algorithm}
+\usepackage[noend]{algpseudocode}
+\input kvmacros
+\geometry{a4paper,left=3cm, right=3cm, top=3cm, bottom=3cm}
+\pagestyle{fancy}
+\title{Final project for the Course High Performance Programming, Philipp Noel von Bachmann}
+
+
+\begin{document}
+\maketitle
+\section{Introduction}
+    Machine Learning and Data analysis are some of the most influencial fields
+    in our current society. One of the main task in Machine Learning is to give
+    a prediction based on some input variables. A common algorithm to use is
+    linear-least-square, which finds the best fit for a linear model. Here, we
+    need an efficient way to calculate this fit. In Data analysis, a common tool
+    is the Principal Component analysis, which tries to reduce the
+    dimensionality of the data in a way, that the reconstruction error gets
+    minimized. PCA relies on an eigenvalue decomposition. For both methods, we
+    can use the QR decomposition too speed up the computation.
+
+
+\section{Problem description}
+    Suppose $A$ is a real, square matrix. Then it can be shown that $A$ can be
+    decomposed into 
+    \begin{equation}\label{eq:QR}
+        A = QR
+    \end{equation}
+    where $Q$ is orthogonal and R is upper triangular. Finding $Q$ and $R$ is
+    the task of the algorithm.
+
+\section{Solution}
+    We will implement an algorithm known as \textbf{Givens Rotation}. This
+    algorithm relies on construction a sequences of matrices $G_i$, such that
+    when multiplying $A$ with $G_i$, we get a new matrix with a zero at a
+    predefined place. Choosing $G_i$ such that we eliminate the lower diagonal
+    of A, we end up with a $R$ and by multiplying all $G_i$ with $Q$. We will
+    first show how to eliminate one value at the time by constructing $G_i$ and
+    then how to combine these.
+
+    \subsection{Givens rotation}
+        First, we define a Givens rotation matrix as 
+        \begin{equation}\label{eq:Givens}
+            G(i,j,\theta) = \begin{bmatrix} 
+                1   &   &   \\
+                    &   \ddots&   \\
+                    &   & c_{ii} & \cdots& -s_{ij}\\
+                    &   & \vdots & \ddots & \vdots\\
+                    &   & s_{ji} & \cdots & c_{jj}\\
+                    &   &  & & &\ddots\\
+                    &   &  & & &&1\\            
+                \end{bmatrix}
+        \end{equation}
+        where $c=\cos(\theta)$, $s=\sin(\theta)$ and any not filled out values are 0.
+        Note: Therefore we can equally represent $G$ by $G(i,j,c,s)$
+    
+    \subsection{Eliminating one value}
+        We will how to find $\theta$ to solve
+        \begin{equation}
+            G(i,j,\theta)^T \begin{bmatrix} 
+                \times\\
+                \vdots\\
+                a\\
+                \vdots\\
+                b\\
+                \vdots\\
+                \times
+                \end{bmatrix}
+            = \begin{bmatrix} 
+                \times\\
+                \vdots\\
+                r\\
+                \vdots\\
+                0\\
+                \vdots\\
+                \times
+                \end{bmatrix}
+        \end{equation}
+        where $\times$ are arbitrary numbers $a,b \in \mathbb{R}$, $r=\sqrt{a^2+b^2}$. 
+        A trivial solution would be 
+        % \begin{align}
+        %     c = \frac{a}{r} & s = \frac{-b}{r}
+        % \end{align}.
+        \begin{multicols}{2}
+            \begin{equation}
+                c = \frac{a}{r}
+            \end{equation}\break
+            \begin{equation}
+                s = \frac{b}{r}
+            \end{equation}
+          \end{multicols}
+        However, $r$ is prone to overflow, so we can instead store it in a
+        different way. If
+        \begin{itemize}
+            \item $\lvert b \rvert \geq \lvert a \rvert$:\\
+                $t=\frac{a}{b}$, $s=\frac{sgn(b)}{\sqrt{1+t^2}}, c=st$
+            \item else:\\
+                $t=\frac{b}{a}$, $c=\frac{sgn(a)}{\sqrt{1+t^2}}, s=ct$
+        \end{itemize}
+
+    \subsection{Final algorithm}
+        \begin{algorithm}[H]
+            \caption{Givens rotation}\label{alg:step}
+            \begin{algorithmic}[1]
+            \Procedure{Step}{}
+            \State set $R=A$, $Q=I$
+            \For{$j$ in 1 to $n$}
+                \For{$i$ in $n$ down to $j+1$}
+                    \State compute the Givens rotation $G(i,j,c,s)$ eliminating $R_{ij}$ with $a=i$, $b=i-1$.
+                    \State set $R=G(i,j,c,s) R$, $Q = Q G(i,j,c,s)$
+                    \State
+                \EndFor
+            \EndFor
+            \EndProcedure
+            \end{algorithmic}
+        \end{algorithm}
+
+        Note that we have to do it in this order, since each update affects row and row above.
+
+
+\section{Random} 
+    \begin{itemize}
+        \item we can order them by affecting row and above
+        \item best is probably to create tasks because upper rows require less work
+        \item maybe need memory optimizations, but most of the operations seem to be near anyway
+    \end{itemize}
+
+    TODO:
+    \begin{itemize}
+        \item implement checks
+        \item implement good storage of G
+        \item implement efficient matmul of G
+        \item implement one givens rotation
+        \item implement outer loop
+        \item serial optimizations
+        \item parallelizations, probably with openmp
+    \end{itemize}
+
+
+
+
+
+\section{Experiments}
+\section{Conclusion}
+\section{References}
+
+
+
+
+
+\end{document}
+
