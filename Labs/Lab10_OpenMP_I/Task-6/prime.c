@@ -23,7 +23,8 @@ int isprime(int i){
 
 int count_primes(int start, int end){
     int sum = 0;
-        for(int i=start; i<end; i++){
+    if (start%2==0) start++; // if even increase by one
+    for(int i=start; i<end; i+=2){
         sum += isprime(i);
     }
     return sum;
