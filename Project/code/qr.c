@@ -97,11 +97,12 @@ void printm(double* A, int m, int n){
 void check_factorization(double* A, double* Q, double* R, int m, int n){
     double* A_prime = matmul(Q, R, m, m, n);
     // printf("Checking factorization\n");
+    // printm(A_prime, m, n);
+    // printf("\n");
+    // printm(A, m, n);
     double diff=0;
-    for(int i=0; i<n; i++){
-        for(int j=0; j<n; j++){
-            diff += fabs(A[i*n+j] - A_prime[i*n+j]);
-        }
+    for(int i=0; i<m*n; i++){
+        diff += fabs(A[i] - A_prime[i]);
     }
     if (diff > 0.1){
         printf("WARNING: Check failed, the difference is %f\n", diff);
@@ -132,16 +133,22 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
     }
     double* G_int_factors, *G_int;
     double* Q_new, *R_new;
+    // printm(Q, m, m);
+    // printm(R, m, n);
 
     // printf("Starting factorization\n");
 
     for(int j=0; j<n; j++){
         for(int i=m-1; i>j; i--){
+            // printf("i: %d, j: %d, a: %f, b: %f\n", i, j, R[(i-1)*n+j], R[i*n+j]);
             G_int_factors = compute_givens_factors(R[(i-1)*n+j], R[i*n+j]);
+            // printf("c:%f, s: %f \n", G_int_factors[0], G_int_factors[1]);
             G_int = create_givens(i, i-1, G_int_factors[0], G_int_factors[1], m);
+            // printm(G_int, m, m);
             R_new = matmul(G_int, R, m, m, n);
             free(R);
             R = R_new;
+            // printm(R_new, m, n);
             G_int = transpose(G_int, m);
             Q_new = matmul(Q, G_int, m, m, m);
             free(Q);
