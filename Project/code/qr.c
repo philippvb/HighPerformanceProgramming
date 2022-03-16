@@ -23,8 +23,32 @@ double* compute_givens_factors(double a, double b){
     double r = sqrt(pow(a, 2) + pow(b, 2));
     sol[0] = a/r;
     sol[1] = b/r;
+    // if(sol[0] < 0){
+    //     sol[0] *=-1;
+    //     sol[1] *=-1;
+    // }
     return sol;
 }
+
+double* compute_givens_factors_2(double a, double b){
+    // printf("%f, %f\n", a, b);
+    double* sol = malloc(2*sizeof(double));
+    double t;
+    if(fabs(a)>fabs(b)){
+        t = a/b;
+        sol[1] = ((b > 0) - (b < 0))/sqrt(1+pow(t,2));
+        sol[0] = sol[1] * t;
+    }
+    else{
+        t = b/a;
+        sol[0] = ((a > 0) - (a < 0))/sqrt(1+pow(t,2));
+        sol[1] = sol[0] * t;
+    }
+    return sol;
+}
+
+
+
 
 /**
  * @brief Create a naive full givens matrix
@@ -43,8 +67,8 @@ double* create_givens(int i, int j, double c, double s, int n){
     }
     G[i*n+i] = c;
     G[j*n+j] = c;
-    G[i*n+j] = s;
-    G[j*n+i] = -s;
+    G[i*n+j] = -s;
+    G[j*n+i] = s;
     return G;
 }
 
@@ -81,18 +105,32 @@ void printm(double* A, int m, int n){
     }
 }
 
-// void check_factorization(double* A, double* Q, double* R, int n){
-//     double* A_prime = calloc(n*n, sizeof(double));
-//     matmul(Q, R, A_prime, n, n, n);
-//     double diff=0;
-//     for(int i=0; i<n; i++){
-//         for(int j=0; j<n; j++){
-//             diff += fabs(A[i*n+j] - A_prime[i*n+j]);
-//         }
-//     }
-//     printf("The difference is %f", diff);
-//     free(A_prime);
-// }
+void check_factorization(double* A, double* Q, double* R, int m, int n){
+    double* A_prime = matmul(Q, R, m, m, n);
+    printf("Checking factorization");
+    printm(A, m, n);
+    printf("\n");
+    printm(A_prime, m, n);
+    double diff=0;
+    for(int i=0; i<n; i++){
+        for(int j=0; j<n; j++){
+            diff += fabs(A[i*n+j] - A_prime[i*n+j]);
+        }
+    }
+    printf("The difference is %f", diff);
+    free(A_prime);
+}
+
+double* transpose(double* A, int n){
+    double* A_out = malloc(n*n*sizeof(double));
+    for(int i=0; i<n; i++){
+        for(int j=0; j<n;j++){
+            A_out[j*n+i] = A[i*n+j];
+        }
+    }
+    free(A);
+    return A_out;
+}
 
 void factorize(double* A, double** Q_p, double** R_p, int m, int n){
     double* Q = calloc(m*m, sizeof(double));
@@ -113,15 +151,16 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
 
     for(int j=0; j<n; j++){
         for(int i=m-1; i>j; i--){
-            printf("i: %d, j: %d\n", i, j);
+            printf("i: %d, j: %d, a: %f, b: %f\n", i, j, R[(i-1)*n+j], R[i*n+j]);
             G_int_factors = compute_givens_factors(R[(i-1)*n+j], R[i*n+j]);
             // printf("c:%f, s: %f \n", G_int_factors[0], G_int_factors[1]);
-            G_int = create_givens(i, i-1, G_int_factors[0], -G_int_factors[1], m);
+            G_int = create_givens(i, i-1, G_int_factors[0], G_int_factors[1], m);
             printm(G_int, 5, 5);
             R_new = matmul(G_int, R, m, m, n);
             free(R);
             R = R_new;
             printm(R_new, m, n);
+            G_int = transpose(G_int, 5);
             Q_new = matmul(Q, G_int, m, m, m);
             free(Q);
             Q = Q_new;
@@ -130,6 +169,8 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
     printf("Finished\n");
     printm(R, m, n);
     printm(Q, m, m);
+    *Q_p = Q;
+    *R_p = R;
 }   
 
 
@@ -175,6 +216,9 @@ int main(){
     // // printm(id, 5, 5);
     // printf("\n");
     // printm(matmul(T, id, 5, 3, 3), 5, 3);
-    factorize(T, NULL, NULL, 5, 3);
+    double* Q, *R;
+    factorize(T, &Q, &R, 5, 3);
+    check_factorization(T, Q, R, 5, 3);
+    
 
 }
