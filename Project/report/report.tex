@@ -2,7 +2,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 \usepackage{pgfplots}
-\usepackage{amsmath, enumerate, amssymb, multirow, fancyhdr, color, graphicx, lastpage, listings, tikz, pdflscape, subfigure, float, polynom, hyperref, tabularx, forloop, geometry, listings, fancybox, tikz, forest, tabstackengine, cancel, multicol, algorithm}
+\usepackage{amsmath, enumerate, amssymb, multirow, fancyhdr, color, graphicx, lastpage, listings, tikz, pdflscape, subfigure, float, polynom, hyperref, tabularx, forloop, geometry, listings, fancybox, tikz, forest, tabstackengine, cancel, multicol, algorithm, diagbox}
 \usepackage[noend]{algpseudocode}
 \input kvmacros
 \geometry{a4paper,left=3cm, right=3cm, top=3cm, bottom=3cm}
@@ -120,6 +120,31 @@
         \end{algorithm}
 
         Note that we have to do it in this order, since each update affects row and row above.
+
+\section{Experiments}
+    \subsection{Check for correctness}
+    \subsection{Results}
+        \subsubsection{Format}
+            In the foloowing section, we will show timing results for different
+            matrix sizes. We denote the sizes by $i,j$, which we defined as
+            decomposing the matrix $A \in \mathbb{R}^{i\times j}$.
+
+        \subsubsection{Baseline Results}
+            \noindent\begin{tabular}{c|c|c|c}
+                \backslashbox{$i$}{$j$} & 10 & 25 & 50 \\
+                \hline
+                10 & 0.0005 & 0.0008 & 0.001 \\
+                25 & 0.018  & 0.034 & 0.049 \\
+                50 & 0.235 & 0.611 & 1.076 \\
+            \end{tabular}\\[10pt]
+
+            We see that the if we vary $i$, we get a superlinear increase of
+            runtime. If we increase $j$ instead, we see that we get a nearly
+            linear increase in runtime.
+            
+            (We should only get a minor increase in runtime for j, since we dont
+            need to calculate new 0s). (For i this makes sense, since increasing
+            i by one adds i new 0s to compute.)
 
 
 \section{Random} 
