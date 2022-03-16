@@ -1,6 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <sys/time.h>
+
+double get_wall_seconds(){
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  double seconds = tv.tv_sec + (double)tv.tv_usec/1000000;
+  return seconds;
+}
 
 /**
  * @brief computes the naive givens factors for a given A and B
@@ -155,12 +163,22 @@ double* create_random(int i, int j){
     return M;
 }
 
-int main(){ 
-    int i = 20;
-    int j= 10;
+int main(int argc, char *argv[]){
+    if(argc != 3) {
+    printf("Give 2 input args: m, n\n");
+    return -1;
+    }
+    int i = atoi(argv[1]);
+    int j = atoi(argv[2]);
     double* T = create_random(i,j);
     double* Q, *R;
+    double start = get_wall_seconds();
     factorize(T, &Q, &R, i, j);
+    double end = get_wall_seconds();
+    printf("The execution took %f seconds\n", end-start);
     check_factorization(T, Q, R, i, j);
+    free(T);
+    free(Q);
+    free(R);
     return 0;
 }
