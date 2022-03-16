@@ -96,14 +96,16 @@ void printm(double* A, int m, int n){
 
 void check_factorization(double* A, double* Q, double* R, int m, int n){
     double* A_prime = matmul(Q, R, m, m, n);
-    printf("Checking factorization\n");
+    // printf("Checking factorization\n");
     double diff=0;
     for(int i=0; i<n; i++){
         for(int j=0; j<n; j++){
             diff += fabs(A[i*n+j] - A_prime[i*n+j]);
         }
     }
-    printf("The difference is %f\n", diff);
+    if (diff > 0.1){
+        printf("WARNING: Check failed, the difference is %f\n", diff);
+    }
     free(A_prime);
 }
 
@@ -131,7 +133,7 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
     double* G_int_factors, *G_int;
     double* Q_new, *R_new;
 
-    printf("Starting factorization\n");
+    // printf("Starting factorization\n");
 
     for(int j=0; j<n; j++){
         for(int i=m-1; i>j; i--){
@@ -146,7 +148,7 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
             Q = Q_new;
         }
     }
-    printf("Finished\n");
+    // printf("Finished\n");
     *Q_p = Q;
     *R_p = R;
 }   
