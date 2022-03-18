@@ -125,7 +125,7 @@
     \subsection{Check for correctness}
     \subsection{Results}
         \subsubsection{Format}
-            In the foloowing section, we will show timing results for different
+            In the following section, we will show timing results for different
             matrix sizes. We denote the sizes by $i,j$, which we defined as
             decomposing the matrix $A \in \mathbb{R}^{i\times j}$.
 
@@ -145,6 +145,109 @@
             (We should only get a minor increase in runtime for j, since we dont
             need to calculate new 0s). (For i this makes sense, since increasing
             i by one adds i new 0s to compute.)
+
+        \subsection{Optimizing the matmul}
+            If we take a closer look at the Givens rotation matrices, we see
+            that they are very sparse. Additionally, we know in advance which
+            entries of the givens rotation wil be nonzero. Thus we can optimize
+            our matmul. First of all, we can only recalculate columns that will
+            get modified by the multiplication. If we multiply $GR$, where
+            $G=G(i,j,c,s)$, then we only need to modify rows $i,j$ in $R$.
+            Secondly, we know that for calculating those rows we only need to
+            muliply by the $c,s$ in the corresponding row of $G$, since all
+            other values are 0.
+
+            We need further distinguish between left- ($G R$) and right-hand
+            ($QG$) multiplication. We show the pseudo-code for left-hand, but
+            right-hand is very similar.
+
+            \begin{algorithm}[H]
+                \caption{optimized left-hand Matmul with Givens}\label{alg:step}
+                \begin{algorithmic}[1]
+                \Procedure{Matmul}{$G=G(i,j,c,s)$, $R$}
+                    \State copy the two rows i,j of R into temporary array $T = \begin{bmatrix}
+                        R_{i, :} \\
+                        R_{j, :} \\
+                    \end{bmatrix}$
+
+                \For{$k$ in columns of $R$}
+                    \State $R_{i, k} = c \cdot T_{1, k} - s \cdot T_{2, k}$
+                    \State $R_{j, k} = s \cdot T_{1, k} + c \cdot T_{2, k}$
+                \EndFor
+                \Return $R$
+                \EndProcedure
+                \end{algorithmic}
+            \end{algorithm}
+
+            This leads to the following results:\\
+            \noindent\begin{tabular}{c|c|c|c}
+                \backslashbox{$i$}{$j$} & 10 & 25 & 50 \\
+                \hline
+                50 & 0.0003 & 0.0007 & 0.0011 \\
+                500 & 0.019 & 0.040 & 0.079 \\
+            \end{tabular}\\[10pt]
+
+            We see that for $i=50,j=50$ we get a runtime of roughly
+            $\frac{1}{1000}$ of the original runtime. However these new runtimes
+            vary quite a bit and we would need to scale them up to get more
+            stable, which is not feasible for the baseline.
+
+        \subsection{Compiler flags}
+            For i,j=500
+            \noindent\begin{tabular}{c|c|c|c|c}
+                Baseline & -O1 & -O2 & -O3 & -03 -march=native -ffast-math\\
+                \hline
+                0.747 & 0.167 & 0.137 & 0.134 & 0.119\\
+            \end{tabular}\\[10pt]
+
+        \subsection{Further serial optimizations}
+            Tried those further optimizations
+            \begin{itemize}
+                \item Write pow calls out (compiler flag probably does it already)
+                \item Exchanged div in computation of $c,s$ by multiplication with $\frac{1}{r}$
+                \item Declare the array sizes as constant
+            \end{itemize}
+
+            Those ones helped:
+            \begin{itemize}
+                \item Inline functions, took time down from 1.09 to 0.99 for i,j=1000
+            \end{itemize}
+
+        \subsection{Cache blocking}
+            Doesnt really make sense, since we dont have any matmul anymore. 
+            For loading of q and r, they are already optimal since we take the two closest cchelines for our mul
+
+
+
+
+
+
+            \begin{itemize}
+                \item optimize the representation of G, thus also optimizing matmul of G
+                \item cache usage (mayby useful?)
+            \end{itemize}
+
+        \subsection{serial code optimization}
+            \begin{itemize}
+                \item maybe profile code
+                \item DONE use compiler flags, best gcc -O3 -march=native -ffast-math
+                \item DONE look if we can reduce arithmetic, eg no div in loop
+                \item DONE inline functions
+                \item loop unrolling
+                \item no if statements
+                \item change pow calls
+                \item cache blocking
+                \item make constants, especially i and j
+                \item pure functions
+                \item uautovectorization (included in 03)
+            \end{itemize}
+
+
+        \subsection{Parallelization}
+            We can modify multiple lines as same time, however need to make sure that not the two same. ideas:
+            Go down by two, then with offset of one again.
+            Create tasks since these tasks might take different amount of time.
+            Maybe try with locking instead of the choosing rows, however probably not that successfull.
 
 
 \section{Random} 
@@ -172,6 +275,9 @@
 \section{Experiments}
 \section{Conclusion}
 \section{References}
+$https://www.math.usm.edu/lambers/mat610/sum10/lecture9.pdf
+https://www.math.usm.edu/lambers/mat610/class0208.pdf
+https://en.wikipedia.org/wiki/Givens_rotation$
 
 
 
