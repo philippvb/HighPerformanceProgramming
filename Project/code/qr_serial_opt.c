@@ -19,7 +19,7 @@ typedef struct givens{
   double s;
 } givens_t;
 
-void matmul_givens_R(givens_t g, double* X, int m, int n){
+inline void matmul_givens_R(givens_t g, double* X, int m, int n){
     double* row_copy = malloc(2*n*sizeof(double));
     // copy the two rows in intermediate matrix
     for(int i=0; i<n; i++){
@@ -37,7 +37,7 @@ void matmul_givens_R(givens_t g, double* X, int m, int n){
     free(row_copy);
 }
 
-void matmul_givens_Q(givens_t g, double* X, int n){
+inline void matmul_givens_Q(givens_t g, double* X, int n){
     // both matrices
     double* col_copy = malloc(2*n*sizeof(double));
     // copy the two cols in intermediate matrix
@@ -56,20 +56,25 @@ void matmul_givens_Q(givens_t g, double* X, int n){
     free(col_copy);
 }
 
-/**
- * @brief computes the naive givens factors for a given A and B
- * 
- * @param a the a in the col
- * @param b the b in the col
- * @return double* the givens factors in the form [c,s]
- */
-double* compute_givens_factors(double a, double b){
-    // printf("%f, %f\n", a, b);
-    double* sol = malloc(2*sizeof(double));
-    double r = sqrt(pow(a, 2) + pow(b, 2));
-    sol[0] = a/r;
-    sol[1] = b/r;
-    return sol;
+// /**
+//  * @brief computes the naive givens factors for a given A and B
+//  * 
+//  * @param a the a in the col
+//  * @param b the b in the col
+//  */
+// double* compute_givens_factors(double a, double b){
+//     // printf("%f, %f\n", a, b);
+//     double* sol = malloc(2*sizeof(double));
+//     double r = 1/sqrt(a*a + b*b);
+//     sol[0] = a*r;
+//     sol[1] = b*r;
+//     return sol;
+// }
+
+inline void compute_givens_factors(double a, double b, givens_t* G){
+    double r = 1/sqrt(a*a + b*b);
+    G->c = a*r;
+    G->s = b*r;
 }
 
 
@@ -141,12 +146,10 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
 
     for(int j=0; j<n; j++){
         for(int i=m-1; i>j; i--){
-            G_int_factors = compute_givens_factors(R[(i-1)*n+j], R[i*n+j]);
+            compute_givens_factors(R[(i-1)*n+j], R[i*n+j], &g);
             // printf("c:%f, s: %f \n", G_int_factors[0], G_int_factors[1]);
             g.i = i;
             g.j = i-1;
-            g.c = G_int_factors[0];
-            g.s = G_int_factors[1];
             matmul_givens_R(g, R, m, n);
             matmul_givens_Q(g, Q, m);
             // printm(Q, m, m);
@@ -176,8 +179,8 @@ int main(int argc, char *argv[]){
     printf("Give 2 input args: m, n\n");
     return -1;
     }
-    int i = atoi(argv[1]);
-    int j = atoi(argv[2]);
+    const int i = atoi(argv[1]);
+    const int j = atoi(argv[2]);
     double* T = create_random(i,j);
 #else
     int i = 5;
@@ -193,12 +196,12 @@ int main(int argc, char *argv[]){
 
 
     double* Q, *R;
-    factorize(T, &Q, &R, i, j);
     double start = get_wall_seconds();
-    check_factorization(T, Q, R, i, j);
+    factorize(T, &Q, &R, i, j);
     double end = get_wall_seconds();
     printf("The execution took %f seconds\n", end-start);
     // printf("Checking matrices\n");
+    check_factorization(T, Q, R, i, j);
     free(Q);
     free(R);
 #ifdef EXAMPLE    
