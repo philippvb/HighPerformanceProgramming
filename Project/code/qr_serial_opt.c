@@ -5,6 +5,13 @@
 
 #define EXAMPLE 0
 
+
+double get_wall_seconds(){
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  double seconds = tv.tv_sec + (double)tv.tv_usec/1000000;
+  return seconds;
+}
 typedef struct givens{
   int i;
   int j;
@@ -18,8 +25,6 @@ void matmul_givens_R(givens_t g, double* X, int m, int n){
     for(int i=0; i<n; i++){
         row_copy[i] = X[g.i*n + i];
         row_copy[n+i] = X[g.j*n + i];
-        // X[g.i*n + i] = 0;
-        // X[g.j*n + i] = 0;
     }
     // iterate over all cols
     for(int k=0; k<n; k++){
@@ -39,8 +44,6 @@ void matmul_givens_Q(givens_t g, double* X, int n){
     for(int i=0; i<n; i++){
         col_copy[i] = X[i * n + g.i];
         col_copy[n+i] = X[i * n + g.j];
-        // X[g.i*n + i] = 0;
-        // X[g.j*n + i] = 0;
     }
     // iterate over all cols
     for(int k=0; k<n; k++){
@@ -51,13 +54,6 @@ void matmul_givens_Q(givens_t g, double* X, int n){
         X[k*n + g.j] = g.s * col_copy[k] + g.c * col_copy[n+k];        
     }
     free(col_copy);
-}
-
-double get_wall_seconds(){
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  double seconds = tv.tv_sec + (double)tv.tv_usec/1000000;
-  return seconds;
 }
 
 /**
@@ -73,52 +69,7 @@ double* compute_givens_factors(double a, double b){
     double r = sqrt(pow(a, 2) + pow(b, 2));
     sol[0] = a/r;
     sol[1] = b/r;
-    // if(sol[0] < 0){
-    //     sol[0] *=-1;
-    //     sol[1] *=-1;
-    // }
     return sol;
-}
-
-double* compute_givens_factors_2(double a, double b){
-    double* sol = malloc(2*sizeof(double));
-    double t;
-    if(fabs(a)>fabs(b)){
-        t = a/b;
-        sol[1] = ((b > 0) - (b < 0))/sqrt(1+pow(t,2));
-        sol[0] = sol[1] * t;
-    }
-    else{
-        t = b/a;
-        sol[0] = ((a > 0) - (a < 0))/sqrt(1+pow(t,2));
-        sol[1] = sol[0] * t;
-    }
-    return sol;
-}
-
-
-
-
-/**
- * @brief Create a naive full givens matrix
- * 
- * @param i col
- * @param j row
- * @param c value for diagonal
- * @param s value for off diagonal
- * @param n size of matrix
- * @return double* the matrix
- */
-double* create_givens(int i, int j, double c, double s, int n){
-    double* G = calloc(n*n, sizeof(double));
-    for(int i=0; i<n;i++){
-        G[i*n+i] = 1;
-    }
-    G[i*n+i] = c;
-    G[j*n+j] = c;
-    G[i*n+j] = -s;
-    G[j*n+i] = s;
-    return G;
 }
 
 
@@ -186,7 +137,7 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
     // printm(Q, m, m);
     // printm(R, m, n);
 
-    printf("Starting factorization\n");
+    // printf("Starting factorization\n");
 
     for(int j=0; j<n; j++){
         for(int i=m-1; i>j; i--){
@@ -201,7 +152,7 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
             // printm(Q, m, m);
         }
     }
-    printf("Finished\n");
+    // printf("Finished\n");
     *Q_p = Q;
     *R_p = R;
 }   
@@ -247,10 +198,12 @@ int main(int argc, char *argv[]){
     check_factorization(T, Q, R, i, j);
     double end = get_wall_seconds();
     printf("The execution took %f seconds\n", end-start);
-    printf("Checking matrices\n");
+    // printf("Checking matrices\n");
     free(Q);
     free(R);
+#ifdef EXAMPLE    
     free(T);
+#endif
     // G_int_factors = compute_givens_factors(T[(4-1)*j+1], T[4*j+1]);
     // // printf("c:%f, s: %f \n", G_int_factors[0], G_int_factors[1]);
     // G_int = create_givens(4, 4-1, G_int_factors[0], G_int_factors[1], i);
