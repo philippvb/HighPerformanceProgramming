@@ -3,6 +3,8 @@
 #include <math.h>
 #include <sys/time.h>
 
+#define RANDOM 1
+
 double get_wall_seconds(){
   struct timeval tv;
   gettimeofday(&tv, NULL);
@@ -148,11 +150,13 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
             R_new = matmul(G_int, R, m, m, n);
             free(R);
             R = R_new;
-            // printm(R_new, m, n);
             G_int = transpose(G_int, m);
             Q_new = matmul(Q, G_int, m, m, m);
             free(Q);
             Q = Q_new;
+            // printm(G_int, m, m);
+            // printf("\n");
+            // printm(Q, m, m);
         }
     }
     // printf("Finished\n");
@@ -173,6 +177,7 @@ double* create_random(int i, int j){
 }
 
 int main(int argc, char *argv[]){
+#ifdef RANDOM    
     if(argc != 3) {
     printf("Give 2 input args: m, n\n");
     return -1;
@@ -180,13 +185,26 @@ int main(int argc, char *argv[]){
     int i = atoi(argv[1]);
     int j = atoi(argv[2]);
     double* T = create_random(i,j);
+#else
+    int i = 5;
+    int j = 3;
+    double T[] = {
+    0.8147, 0.0975, 0.1576,
+    0.9058, 0.2785, 0.9706,
+    0.1270, 0.5469, 0.9572,
+    0.9134, 0.9575, 0.4854,
+    0.6324, 0.9649, 0.8003
+    };
+#endif
     double* Q, *R;
     double start = get_wall_seconds();
     factorize(T, &Q, &R, i, j);
     double end = get_wall_seconds();
     printf("The execution took %f seconds\n", end-start);
     check_factorization(T, Q, R, i, j);
+#ifdef RANDOM
     free(T);
+#endif
     free(Q);
     free(R);
     return 0;
