@@ -7,6 +7,7 @@
 
 #define EXAMPLE 1
 #define EPS 1e-8
+int n_threads;
 
 
 double get_wall_seconds(){
@@ -188,7 +189,7 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
     double first_part = get_wall_seconds();
     for(int it = 0; it<(n-1)*2-1; it++){
         // printf("it %d\n", it);
-        #pragma omp parallel for num_threads(8) private(g)
+        #pragma omp parallel for num_threads(n_threads) private(g)
         for(int j=max(0, increase_even(it-m+2)); j<=min(it/2, n-1); j+=2){
             // printf("i %d, j %d, g_id %d \n", i, j, triangular_number(m-1) - triangular_number(m-1-j) + (m-1-i));
             // usleep(100000);
@@ -202,7 +203,7 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
         }
         // printm(R, m, n);
         // printf("\n");
-        #pragma omp parallel for num_threads(8) private(g)
+        #pragma omp parallel for num_threads(n_threads) private(g)
         for(int j=max(1, increase_uneven(it-m+2)); j<=min(it/2, n-1); j+=2){
             // printf("i %d, j %d, g_id %d \n", i, j, triangular_number(m-1) - triangular_number(m-1-j) + (m-1-i));
             // usleep(100000);
@@ -235,13 +236,14 @@ double* create_random(int i, int j){
 int main(int argc, char *argv[]){
 
 #if EXAMPLE
-    if(argc != 3) {
-    printf("Give 2 input args: m, n\n");
+    if(argc != 4) {
+    printf("Give 3 input args: m, n, n_threads\n");
     return -1;
     }
     const int i = atoi(argv[1]);
     const int j = atoi(argv[2]);
     double* T = create_random(i,j);
+    n_threads = atoi(argv[3]);
 #else
     int i = 5;
     int j = 3;
