@@ -160,6 +160,14 @@ int triangular_number(int n){
     return (n * n + n)/2;
 }
 
+int increase_uneven(int i){
+    return i + (i%2==0);
+}
+
+int increase_even(int i){
+    return i + (i%2!=0);
+}
+
 void factorize(double* A, double** Q_p, double** R_p, int m, int n){
     double* Q = calloc(m*m, sizeof(double));
     double* R = malloc(m*n*sizeof(double));
@@ -172,8 +180,7 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
     }
 
     double* G_int_factors;
-    givens_t* g_list = malloc(triangular_number(m-1) * sizeof(givens_t));
-    // printf("Size of g_list %d\n", triangular_number(m-1));
+    givens_t g;
     // printm(R, m, n);
     // printm(Q, m, m);
     // printm(R, m, n);
@@ -181,29 +188,34 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
     double first_part = get_wall_seconds();
     for(int it = 0; it<(n-1)*2-1; it++){
         // printf("it %d\n", it);
-        #pragma omp parallel for num_threads(8)
-        for(int j=max(0, it-m+2); j<=min(it/2, n-1); j++){
+        #pragma omp parallel for num_threads(8) private(g)
+        for(int j=max(0, increase_even(it-m+2)); j<=min(it/2, n-1); j+=2){
             // printf("i %d, j %d, g_id %d \n", i, j, triangular_number(m-1) - triangular_number(m-1-j) + (m-1-i));
             // usleep(100000);
             int i = (m-1-it+2*j);
-            int g_id = triangular_number(m-1) - triangular_number(m-1-j) + (m-1-i);
-            compute_givens_factors(R[(i-1)*n+j], R[i*n+j], &g_list[g_id]);
-            g_list[g_id].i = i;
-            g_list[g_id].j = i-1;
-            matmul_givens_R(g_list[g_id], R, m, n);
+            // printf("i %d, j %d\n", i, j);
+            compute_givens_factors(R[(i-1)*n+j], R[i*n+j], &g);
+            g.i = i;
+            g.j = i-1;
+            matmul_givens_R(g, R, m, n);
+            matmul_givens_Q(g, Q, m);
         }
-            // printm(R, m, n);
+        // printm(R, m, n);
+        // printf("\n");
+        #pragma omp parallel for num_threads(8) private(g)
+        for(int j=max(1, increase_uneven(it-m+2)); j<=min(it/2, n-1); j+=2){
+            // printf("i %d, j %d, g_id %d \n", i, j, triangular_number(m-1) - triangular_number(m-1-j) + (m-1-i));
+            // usleep(100000);
+            int i = (m-1-it+2*j);
+            // printf("i %d, j %d\n", i, j);
+            compute_givens_factors(R[(i-1)*n+j], R[i*n+j], &g);
+            g.i = i;
+            g.j = i-1;
+            matmul_givens_R(g, R, m, n);
+            matmul_givens_Q(g, Q, m);
+        }
+        // printm(R, m, n);
     }
-    printf("First part took %f\n", get_wall_seconds() - first_part);
-    double second_part = get_wall_seconds();
-    for(int i=0; i<triangular_number((m-1)); i++){
-        matmul_givens_Q(g_list[i], Q, m);
-    }
-    printf("Second part took %f\n", get_wall_seconds() - second_part);
-
-    
-    // printf("Finished\n");
-    free(g_list);
     *Q_p = Q;
     *R_p = R;
 }   
