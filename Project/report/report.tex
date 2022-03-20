@@ -25,12 +25,12 @@
 
 
 \section{Problem description}
-    Suppose $A$ is a real, square matrix. Then it can be shown that $A$ can be
+    Suppose $A \in \mathbb{R}^{m\times n}$ is a real, square matrix. Then it can be shown that $A$ can be
     decomposed into 
     \begin{equation}\label{eq:QR}
         A = QR
     \end{equation}
-    where $Q$ is orthogonal and R is upper triangular. Finding $Q$ and $R$ is
+    where $Q$ is orthogonal and R is upper triangular. Finding $Q \in \mathbb{R}^{m\times m}$ and $R \in \mathbb{R}^{m\times n}$ is
     the task of the algorithm.
 
 \section{Solution}
@@ -102,17 +102,30 @@
                 $t=\frac{b}{a}$, $c=\frac{sgn(a)}{\sqrt{1+t^2}}, s=ct$
         \end{itemize}
 
+    \subsection{Order of elimination}\label{sub:ElimOrder}
+
+    Let us assume that we have
+    $R= \begin{bmatrix}
+        x & x & x \\
+        a=0 & x & x \\
+        b=0 & c & x \\
+    \end{bmatrix}$, which we get after finishing the first column in
+    algorithm \ref{alg:QR_Givens}. The next steps would be to set $c=0$.
+    This in turn modifies row 1,2 in $R$ afterwards, which means $a$ and
+    $b$ necessarly need to be 0 in order to not destroy the solution.
+    Therefore, if we want to set $R_{i,j}$ to 0, then we need to make
+    sure that $R_{i, :j}$ and $R_{i-1, :j}$ are already 0.
+
     \subsection{Final algorithm}
         \begin{algorithm}[H]
-            \caption{Givens rotation}\label{alg:step}
+            \caption{QR factorization with Givens rotation}\label{alg:QR_Givens}
             \begin{algorithmic}[1]
-            \Procedure{Step}{}
+            \Procedure{Factorize}{$A$}
             \State set $R=A$, $Q=I$
             \For{$j$ in 1 to $n$}
-                \For{$i$ in $n$ down to $j+1$}
-                    \State compute the Givens rotation $G(i,j,c,s)$ eliminating $R_{ij}$ with $a=i$, $b=i-1$.
+                \For{$i$ in $m$ down to $j+1$}
+                    \State compute the Givens rotation $G(i,i-1,c,s)$ eliminating $R_{ij}$ with $a=R_{i-1,j}$, $b=R_{i-1,j}$.
                     \State set $R=G(i,j,c,s) R$, $Q = Q G(i,j,c,s)$
-                    \State
                 \EndFor
             \EndFor
             \EndProcedure
@@ -244,10 +257,122 @@
 
 
         \subsection{Parallelization}
-            We can modify multiple lines as same time, however need to make sure that not the two same. ideas:
-            Go down by two, then with offset of one again.
-            Create tasks since these tasks might take different amount of time.
-            Maybe try with locking instead of the choosing rows, however probably not that successfull.
+            \subsubsection{Theory and Implementation}
+                In order to parallelize our code, we first need to check which
+                parts can be done in parallel. First, note that the computation
+                of the Givens rotation in line 5 of algorithm
+                \ref{alg:QR_Givens} is a pure function, eg just depends on the
+                inputs and doesn't have any side effects. Thus, we only need to
+                focus on updating $Q,R$ in line 6. Here, it is necessary to
+                distinguish in two cases:
+                \begin{itemize}
+                    \item For left-hand Givens rotation $GR$, if $G=G(i,j,c,s)$,
+                    only rows $i,j$ of $R$ get modified
+                    \item \item For righ-hand Givens rotation $QG$, if
+                    $G=G(i,j,c,s)$, only columns $i,j$ of $Q$ get modified
+                \end{itemize}
+                Consequently, two update steps rotating around
+                $G(i_1,j_1,c_1,s_1)$ and $G(i_2,j_2,c_2,s_2)$ are independent,
+                if $i_1, i_2, j_1, j_2$ are pairwise distinct. This means we
+                need to make sure that if we set $R_{i,j}$ to 0 in one
+                iteration, we can set any other elements in Row $i,j$ to 0 in
+                the same iteration, in order to not interfere between the
+                computations.
+                
+                
+                In combination with the constrain that if we want to set
+                $R_{i,j}$ to 0, $R_{i, :j}$ and $R_{i-1, :j}$ already need to be
+                0, (see Section \ref{sub:ElimOrder}) we arrive at the following
+                scheme, shown for a $5\times 5$ matrix:
+                \begin{equation}\label{eq:It_Scheme}
+                    \begin{bmatrix}
+                        x & x & x & x & x \\
+                        3 & x & x & x & x \\
+                        2 & 4 & x & x & x \\
+                        1 & 3 & 5 & x & x \\
+                        0 & 2 & 4 & 6 & x \\
+                    \end{bmatrix}
+                \end{equation}
+                where the values denote in which iteration we can set the
+                element to 0 without cross-interference. This shows that we can
+                set $R_{2,0}$ and $R_{4,1}$ to 0 in parallel for example.
+
+                We arrive at the parallel algorithm:
+                \begin{algorithm}[H]
+                    \caption{parallel QR factorization }\label{alg:QR_Parallel}
+                    \begin{algorithmic}[1]
+                        \Procedure{Factorize\_Parallel}{$A \in \mathbb{R}^{m\times n}$}
+                            \State set $R=A$, $Q=I$
+                            \For{$it$ in 1 to $(n-1)*2+m-n$}
+                                \State In parallel:
+                                \For{$i,j$ given by the iteration scheme \ref{eq:It_Scheme}}
+                                    \State compute the Givens rotation $G(i,i-1,c,s)$ eliminating $R_{ij}$ 
+                                    \State set $R=G(i,j,c,s) R$, $Q = Q G(i,j,c,s)$
+                                \EndFor
+                            \EndFor
+                        \EndProcedure
+                    \end{algorithmic}
+                \end{algorithm}
+
+                The code was getting parallelized with \textbf{OpenMP}. Since we
+                have equal load in line 6+7 of algorithm \ref{alg:QR_Parallel},
+                we don't need to use load balancing.
+
+                Looking at \ref{eq:It_Scheme}, we cannot expect a linear scaling
+                with the number of threads. For example in iteration 0 and 1, we
+                only have 1 element so there is no speedup by using more
+                threads. More formally if $A \in \mathbb{R}^{m\times n}$, then
+                we can have a maximum of $\min(m/2, n)$ computations running in
+                parallel, achieved in the itertation where we set $R_{1,0}$ to
+                0.
+
+            \subsubsection{Results}
+                Because the computation of $i,j$ is a bit more involved now, we
+                get a slightly higher baseline with 1.137s compared to 0.986s
+                for our serial code and $i,j=1000$. However when increasing the number of threads:\\
+                \begin{tikzpicture}[scale=0.7]
+                    \begin{axis}[
+                        xmin = 0, xmax = 21,
+                        ymin = 0.4, ymax = 1.2,
+                        xtick distance = 1,
+                        ytick distance = 0.1,
+                        grid = both,
+                        minor tick num = 1,
+                        major grid style = {lightgray},
+                        minor grid style = {lightgray!25},
+                        width = 0.8\textwidth,
+                        height = 0.8\textwidth,
+                        xlabel = {Number of threads},
+                        ylabel = {Time (s)}]
+                    
+                    
+                    % Plot data from a file
+                    \addplot[
+                        scatter,
+                        thin,
+                        red,
+                        dashed
+                    ] file[skip first] {data/parallel.dat};
+                    
+                    \end{axis}
+                \end{tikzpicture}
+
+            \noindent\begin{tabular}{c|c|c|c|c|c}
+                 &10 & 100 & 1000 & 2000 & 4000\\
+                \hline
+                $j=1000, i=$ & 0.031 & 0.023 & 0.425 & 4.125 & 58.866 \\
+                $i=1000, j=$ & 0.031 & 0.087 & 0.430 & 1.084 & 2.247\\
+            \end{tabular}\\[10pt]
+
+            
+
+
+            
+
+
+\section{Memory optimization}
+    Maybe try to store Q in column format and R in row format??
+
 
 
 \section{Random} 
