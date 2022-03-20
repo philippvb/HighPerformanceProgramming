@@ -103,6 +103,9 @@ void printm(double* A, int m, int n){
         printf("\n");
     }
 }
+inline int min(int a, int b){
+    return (a<b) * a + (b<=a) * b;
+}
 
 void check_factorization(double* A, double* Q, double* R, int m, int n){
     double* A_prime = matmul(Q, R, m, m, n);
@@ -116,7 +119,7 @@ void check_factorization(double* A, double* Q, double* R, int m, int n){
     // printf("R\n");
     // printm(R, m, n);
     for(int i=0; i<m; i++){
-        for(int j=0; j<i; j++){
+        for(int j=0; j<min(i, n); j++){
             // printf("%f\n", R[i*n+j]);
             if(fabs(R[i*n+j]) >= EPS){
                 printf("WARNING: Check failed, the lower triangle of R seems to contain other values than 0 at pos %d, %d, value %f\n", i, j, R[i*n+j]);
@@ -149,23 +152,20 @@ double* transpose(double* A, int n){
     return A_out;
 }
 
-int min(int a, int b){
-    return (a<b) * a + (b<=a) * b;
-}
 
-int max(int a, int b){
+inline int max(int a, int b){
     return (a>b) * a + (b>=a) * b;
 }
 
-int triangular_number(int n){
+inline int triangular_number(int n){
     return (n * n + n)/2;
 }
 
-int increase_uneven(int i){
+inline int increase_uneven(int i){
     return i + (i%2==0);
 }
 
-int increase_even(int i){
+inline int increase_even(int i){
     return i + (i%2!=0);
 }
 
