@@ -3,7 +3,12 @@
 #include <math.h>
 #include <sys/time.h>
 
+#define EPS 1e-15
 #define USE_EXAMPLE 0
+
+inline int min(int a, int b){
+    return (a<b) * a + (b<=a) * b;
+}
 
 
 double get_wall_seconds(){
@@ -95,6 +100,18 @@ void printm(double* A, int m, int n){
 
 void check_factorization(double* A, double* Q, double* R, int m, int n){
     double* A_prime = matmul(Q, R, m, m, n);
+    // first we check if Q is upper triangular
+    for(int i=0; i<m; i++){
+        for(int j=0; j<min(i, n); j++){
+            if(fabs(R[i*n+j]) >= EPS){
+                printf("WARNING: Check failed, the lower triangle of R seems to contain other values than 0 at pos %d, %d, value %f\n", i, j, R[i*n+j]);
+                return;
+            }
+            // set values to 0, since during factorization rounding error occures
+            R[i*n+j] = 0.0;
+        }
+    }
+    // check the actual factorization
     double diff=0;
     for(int i=0; i<m*n; i++){
         diff += fabs(A[i] - A_prime[i]);
