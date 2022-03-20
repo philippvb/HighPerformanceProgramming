@@ -5,7 +5,7 @@
 #include <omp.h>
 #include <unistd.h>
 
-#define EXAMPLE 1
+#define EXAMPLE 0
 #define EPS 1e-8
 int n_threads = 1;
 
@@ -190,7 +190,7 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
     for(int it = 0; it<(n-1)*2+m-n; it++){
         // printf("it %d\n", it);
         #pragma omp parallel for num_threads(n_threads) private(g)
-        for(int j=max(0, increase_even(it-m+2)); j<=min(it/2, n-1); j+=2){
+        for(int j=max(0, it-m+2); j<=min(it/2, n-1); j+=1){
             // printf("i %d, j %d, g_id %d \n", i, j, triangular_number(m-1) - triangular_number(m-1-j) + (m-1-i));
             // usleep(100000);
             int i = (m-1-it+2*j);
@@ -201,21 +201,6 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
             matmul_givens_R(g, R, m, n);
             matmul_givens_Q(g, Q, m);
         }
-        // printm(R, m, n);
-        // printf("\n");
-        #pragma omp parallel for num_threads(n_threads) private(g)
-        for(int j=max(1, increase_uneven(it-m+2)); j<=min(it/2, n-1); j+=2){
-            // printf("i %d, j %d, g_id %d \n", i, j, triangular_number(m-1) - triangular_number(m-1-j) + (m-1-i));
-            // usleep(100000);
-            int i = (m-1-it+2*j);
-            // printf("i %d, j %d\n", i, j);
-            compute_givens_factors(R[(i-1)*n+j], R[i*n+j], &g);
-            g.i = i;
-            g.j = i-1;
-            matmul_givens_R(g, R, m, n);
-            matmul_givens_Q(g, Q, m);
-        }
-        // printm(R, m, n);
     }
     *Q_p = Q;
     *R_p = R;
