@@ -3,7 +3,7 @@
 #include <math.h>
 #include <sys/time.h>
 
-#define RANDOM 1
+#define USE_EXAMPLE 0
 
 double get_wall_seconds(){
   struct timeval tv;
@@ -12,27 +12,8 @@ double get_wall_seconds(){
   return seconds;
 }
 
-/**
- * @brief computes the naive givens factors for a given A and B
- * 
- * @param a the a in the col
- * @param b the b in the col
- * @return double* the givens factors in the form [c,s]
- */
-double* compute_givens_factors(double a, double b){
-    // printf("%f, %f\n", a, b);
-    double* sol = malloc(2*sizeof(double));
-    double r = sqrt(pow(a, 2) + pow(b, 2));
-    sol[0] = a/r;
-    sol[1] = b/r;
-    // if(sol[0] < 0){
-    //     sol[0] *=-1;
-    //     sol[1] *=-1;
-    // }
-    return sol;
-}
 
-double* compute_givens_factors_2(double a, double b){
+double* compute_givens_factors(double a, double b){
     double* sol = malloc(2*sizeof(double));
     double t;
     if(fabs(a)>fabs(b)){
@@ -49,18 +30,6 @@ double* compute_givens_factors_2(double a, double b){
 }
 
 
-
-
-/**
- * @brief Create a naive full givens matrix
- * 
- * @param i col
- * @param j row
- * @param c value for diagonal
- * @param s value for off diagonal
- * @param n size of matrix
- * @return double* the matrix
- */
 double* create_givens(int i, int j, double c, double s, int n){
     double* G = calloc(n*n, sizeof(double));
     for(int i=0; i<n;i++){
@@ -98,10 +67,6 @@ void printm(double* A, int m, int n){
 
 void check_factorization(double* A, double* Q, double* R, int m, int n){
     double* A_prime = matmul(Q, R, m, m, n);
-    // printf("Checking factorization\n");
-    // printm(A_prime, m, n);
-    // printf("\n");
-    // printm(A, m, n);
     double diff=0;
     for(int i=0; i<m*n; i++){
         diff += fabs(A[i] - A_prime[i]);
@@ -135,18 +100,11 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
     }
     double* G_int_factors, *G_int;
     double* Q_new, *R_new;
-    // printm(Q, m, m);
-    // printm(R, m, n);
-
-    // printf("Starting factorization\n");
 
     for(int j=0; j<n; j++){
         for(int i=m-1; i>j; i--){
-            // printf("i: %d, j: %d, a: %f, b: %f\n", i, j, R[(i-1)*n+j], R[i*n+j]);
             G_int_factors = compute_givens_factors(R[(i-1)*n+j], R[i*n+j]);
-            // printf("c:%f, s: %f \n", G_int_factors[0], G_int_factors[1]);
             G_int = create_givens(i, i-1, G_int_factors[0], G_int_factors[1], m);
-            // printm(G_int, m, m);
             R_new = matmul(G_int, R, m, m, n);
             free(R);
             R = R_new;
@@ -154,12 +112,8 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
             Q_new = matmul(Q, G_int, m, m, m);
             free(Q);
             Q = Q_new;
-            // printm(G_int, m, m);
-            // printf("\n");
-            // printm(Q, m, m);
         }
     }
-    // printf("Finished\n");
     *Q_p = Q;
     *R_p = R;
 }   
@@ -177,7 +131,7 @@ double* create_random(int i, int j){
 }
 
 int main(int argc, char *argv[]){
-#ifdef RANDOM    
+#if !USE_EXAMPLE    
     if(argc != 3) {
     printf("Give 2 input args: m, n\n");
     return -1;
@@ -202,7 +156,7 @@ int main(int argc, char *argv[]){
     double end = get_wall_seconds();
     printf("The execution took %f seconds\n", end-start);
     check_factorization(T, Q, R, i, j);
-#ifdef RANDOM
+#if !USE_EXAMPLE
     free(T);
 #endif
     free(Q);
