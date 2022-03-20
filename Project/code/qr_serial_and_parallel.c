@@ -7,7 +7,7 @@
 
 #define EXAMPLE 1
 #define EPS 1e-8
-int n_threads;
+int n_threads = 1;
 
 
 double get_wall_seconds(){
@@ -187,7 +187,7 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
     // printm(R, m, n);
 
     double first_part = get_wall_seconds();
-    for(int it = 0; it<(n-1)*2-1; it++){
+    for(int it = 0; it<(n-1)*2+m-n; it++){
         // printf("it %d\n", it);
         #pragma omp parallel for num_threads(n_threads) private(g)
         for(int j=max(0, increase_even(it-m+2)); j<=min(it/2, n-1); j+=2){
