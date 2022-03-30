@@ -1,7 +1,0 @@
-- if we set the threads to detached, we get an error when we try to join them
-- we also see that these threads dont complete, so we cant join them
-
-
-better answer
-- if we set them to detachd, we see that even if after our main programm terminates, we continue to run these threads until they finish
-- hwoever this only happens if we have the pthread_exit call at the end, otherwise these threads will just be killed

@@ -1,9 +1,0 @@
-N=100000
-- baseline: 0.32
-- 2: 0.24
-- 4: 0.15
-- 10: 0.1
-- 20: 0.09
-
-The improvement is not linear, since the work is not divided evenly between the
-threads, since later computations take more time

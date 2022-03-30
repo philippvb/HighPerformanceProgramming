@@ -1,2 +1,0 @@
-- i expect the serial algorithm to be more accurate because in parallel, we make
-a rounding error for each thread indipendently, and they get added in the end
