@@ -1,7 +1,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define NUM_THREADS	8
+#define NUM_THREADS	3
 
 pthread_mutex_t lock;
 pthread_cond_t mysignal;
@@ -27,7 +27,7 @@ void barrier() {
 void* HelloWorld(void* arg) {
   long id=(long)arg;
   printf("Hello World! %ld\n", id);
-  barrier();
+  // barrier();
   printf("Bye Bye World! %ld\n", id);
   return NULL;
 }

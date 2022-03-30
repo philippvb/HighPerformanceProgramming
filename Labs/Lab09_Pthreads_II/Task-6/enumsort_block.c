@@ -7,7 +7,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-#define NUM_THREADS	10
+#define NUM_THREADS	4
 #define BLOCK_SIZE 100
 #define len 100000
 
@@ -29,6 +29,7 @@ void findrank(long j)
   outdata[rank]=indata[j];
 }
 
+// find multiple ranks for the blocks
 void *findmultipleranks(void* arg){
   long start = (long) arg;
   for(int i=0; i<BLOCK_SIZE; i++){

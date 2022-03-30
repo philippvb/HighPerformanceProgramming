@@ -43,10 +43,11 @@ int main() {
     x *= 1.00000000001;
   printf("main thread did some work, x = %f\n", x);
 
+  // set DoItNow and signal to the thread to wake up again
   pthread_mutex_lock(&m);
   DoItNow = 1;
   pthread_mutex_unlock(&m);
-  // pthread_cond_signal(&cond);
+  pthread_cond_signal(&cond);
   
   /* Wait for thread to finish. */
   printf("the main() function now calling pthread_join().\n");

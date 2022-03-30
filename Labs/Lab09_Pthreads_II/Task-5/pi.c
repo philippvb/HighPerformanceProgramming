@@ -6,11 +6,12 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#define NUM_THREADS 10
+#define NUM_THREADS 4
 
 const int intervals = 500000000;
 double dx  = 1.0/intervals;
 
+// computes the integral of the interval (given as input [start, end]) and returns a pointer to its sum
 void* compute_interval(void* d){
   int* data = (int *) d;
   double* thread_sum_p = malloc(sizeof(double));
@@ -29,11 +30,13 @@ int main(int argc, char *argv[]) {
   const int block_size = intervals/NUM_THREADS;
   int data[2*NUM_THREADS];
   for(int i=0; i<NUM_THREADS; i++){
+    // start and end point for computation fo each thread
     data[i] = block_size*i;
     data[i+1] = block_size*(i+1);
     pthread_create(&threads[i], NULL, compute_interval, data+i);
   }
 
+  // join and sum up the results
   for(int i=0; i<NUM_THREADS; i++){
     void* intermediate;
     pthread_join(threads[i], &intermediate);

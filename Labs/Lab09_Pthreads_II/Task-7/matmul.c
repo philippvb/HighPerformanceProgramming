@@ -5,7 +5,7 @@
 #include <sys/time.h>
 #include <pthread.h>
 
-#define NUM_THREADS 25
+#define NUM_THREADS 4
 
 static double get_wall_seconds() {
   struct timeval tv;
@@ -25,6 +25,8 @@ void matmul(int row, int col){
   }
   C[row][col] = sum;
 }
+
+// The data for each thread
 typedef struct threaddata
 {
   int i_start;
@@ -33,6 +35,7 @@ typedef struct threaddata
   int j_end;
 } threaddata;
 
+// matmul over a block
 void* matmul_loop(void *args){
   threaddata* data = (threaddata*) args;
   for(int i=data->i_start; i<data->i_end; i++){
@@ -78,6 +81,12 @@ int main(int argc, char *argv[]) {
   pthread_t threads[NUM_THREADS];
   threaddata threads_data[NUM_THREADS];
   int block_size = n/sqrt(NUM_THREADS);
+  // check that threads and matrix dims match
+  if(n % (int) sqrt(NUM_THREADS)!= 0){
+    printf("Please enter a block size which is dividable by the sqrt of number of threads\n");
+    return -1;
+  }
+  // start all threads
   int cur_thread = 0;
   for(int i=0; i<n; i+=block_size){
     for(int j=0; j<n; j+=block_size){
@@ -90,6 +99,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  // join all threads
   for(int t = 0; t<NUM_THREADS; t++){
     pthread_join(threads[t], NULL);
   }

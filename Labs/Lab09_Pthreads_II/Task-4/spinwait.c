@@ -1,11 +1,11 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define NUM_THREADS	8
+#define NUM_THREADS	4
 
 pthread_mutex_t lock;
 int waiting = 0;
-volatile int state = 0;
+volatile int state = 0; // we need to set this to volatile, otherwise the programm doesn't work anymore when unsing optimizer flags
 
 void barrier() {
   int mystate;

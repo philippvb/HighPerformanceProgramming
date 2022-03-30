@@ -137,6 +137,140 @@
         protecting the variable, we get the same result every time, since the
         mutex just allows one threads to write to the sum variable at a time,
         and the other threads have to wait for their turn.
+
+\section{Lab09\_Pthreads\_II}
+    
+    \subsection{Task 1}
+        Output:
+        \begin{lstlisting}[language=bash]
+            This is the main() function starting.
+            the main() function now calling pthread_create().
+            This is the main() function after pthread_create()
+            the main() function now calling pthread_join().
+            Data from thread malloc 1234
+        \end{lstlisting}
+        We see that we can acces the data in the main function. This happens
+        because in the thread we malloc the variable on the stack, thus it
+        becomes accessible by its pointer globally until we free it. By
+        returning the pointer to the main function, we now have acces to to this
+        variable in the main part. Of course, this means we also have to free
+        the variable in the end.
+
+    \subsection{Task 2}
+        In our inital code, we see that we use 200\% CPU. This is because the
+        thread is constantly checking if \textbf{DoItNow} is set to 0, which
+        wastes CPU resources. If we don't set \textbf{DoItNow=1} in the main,
+        our program will not exit since our thread will not finish because it
+        still waits for \textbf{DoItNow=1}. Now we use a condition variable. As
+        expect, we just use 100\% CPU now, since our thread is put to sleep.
+        Some further modifications to break the code:
+        \begin{itemize}
+            \item Removing the \textbf{pthread\_cond\_signal(\&cond);} leads to
+            the program not finishing, since our thread is never woken up.
+            \item Not releasing the mutex in the main function leads to the
+            program not finishing, since our thread is now not allowed to acces
+            the \textbf{DoItNow} variable.
+            \item Not locking the mutex in the thread still leads to the same
+            behaviour as before. However in a larger scale code this could
+            become dangerous, since we now read \textbf{DoItNow} while others
+            can write it.
+        \end{itemize}
+
+    \subsection{Task 3}
+        By setting a thread to detached, we can't join it anymore. Furthermore
+        it will continue to run, even after the main programm finished.  It is
+        however necessary to call \textbf{pthread\_exit} otherwise, the detached
+        thread will be killed after completion of the main and the programm
+        will exit.
+        \begin{lstlisting}[language=bash]
+            Main: creating thread 0
+            Main: creating thread 1
+            Thread 0 starting...
+            Main: program completed. Exiting.
+            Thread 1 starting...
+            Thread 0 done. Result = -2.183590e+08
+            Thread 1 done. Result = -2.183590e+08
+        \end{lstlisting}
+        We see that the main thread completes and exits, but the programm still
+        waits for the detached threads to complete, since we called
+        \textbf{pthread\_exit} in the end.
+
+    \subsection{Task 4}
+        Output of synch:
+        \begin{lstlisting}[language=bash]
+            Hello World! 0
+            Hello World! 1
+            Hello World! 2
+            Bye Bye World! 2
+            Bye Bye World! 0
+            Bye Bye World! 1
+        \end{lstlisting}
+        Output when removing barrier:
+        \begin{lstlisting}[language=bash]
+            Hello World! 0
+            Bye Bye World! 0
+            Hello World! 1
+            Bye Bye World! 1
+            Hello World! 2
+            Bye Bye World! 2
+        \end{lstlisting}
+
+        We can see that when we have a barrier, we first get all hellos before
+        all byes. This is since the barrier lets the threads wait for the others
+        to start. However when removing the barrier, the threads don't wait for
+        the others to start, thus some finish before others start.
+
+        For spinwait, we see that when using optimizer flags, our programm
+        doesn't terminate. This is because of the empty loop in line 19. The
+        optimizer sees that the loop does nothing, and thus removes it, which
+        can be also seen in assembly. When using the keyword volatile, we tell
+        the compiler that this variable might change over time, thus it doesn't
+        optimize that loop out.
+
+    \subsection{Task 5}
+        We parallelize the code by letting each thread compute the integral over
+        a certain interval and the summing up all the integrals. We see that the
+        parallel version is more accurate. By choosing a datatype, we necessarly
+        get a rounding error. However when using multiple threads, they both get
+        their own rounding error for their interval, which in sum is a smaller
+        rounding error than having just one thread. In other words, by having
+        the sum distributed over more variables, we don't accumulate the
+        rounding error in one.
+
+    \subsection{Task 6}
+        We implement the new strategy by giving each thread a range of elements
+        to compute the rank of. Each thread then iterates over all its elements
+        in serial. This removes the overhead of creating threads all the time
+        and leads to a time of 0.36s vs 1.53s for 4 threads and array size of
+        100000. 
+        
+        When studying the complexity, a serial enumeration sort has complexity
+        $O(n^2)$, since we need to iterate over all elements, and for each
+        element need to iterate over all elements again to comute the rank. When
+        parallelizing the code, we see that we can perform the outer loop in
+        parallel, however the cost for the inner loop stays constant. For 4
+        threads for example, we get $O(\frac{n}{4}\cdot n) = O(n^2)$ (assuming
+        runtime scales linearly with number of threads). This means that
+        compared to merge-sort which has $O(n\log(n))$, enumeration sort is
+        worse.
+
+    \subsection{Task 7}
+        We see that the computation of each element in the output matrix is
+        independent of the rest. Therefore, we can theoretically get each
+        computed by a different thread. With the results from the previous Task
+        however, we instead opt to give each thread a block to compute. This
+        leads to the following performance, $N=1000$:\\[10pt]
+        \noindent\begin{tabular}{c|c|c|c|c}
+            Number of threads & 1 & 4 & 16 & 25\\
+            \hline
+            Runtime (s) & 1.08 & 0.44 & 0.35 & 0.33
+        \end{tabular}\\[10pt]
+        We see that the runtime decreases, although not linearly. If our matrix
+        gets to small, the overhead from threading is more than the reward. For
+        exmaple for $N=10$, we get 0.000087s for 1 thread and 0.000132s for 4.
+        
+            
+        
     
 
 

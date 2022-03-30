@@ -7,7 +7,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-#define NUM_THREADS	5
+#define NUM_THREADS	4
 #define len 100000
 
 static double get_wall_seconds() {

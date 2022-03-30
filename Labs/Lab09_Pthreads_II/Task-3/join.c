@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#define NUM_THREADS	4
+#define NUM_THREADS	2
 
 void *BusyWork(void *t)
 {
@@ -15,7 +15,7 @@ void *BusyWork(void *t)
   double result=0.0;
   tid = (long)t;
   printf("Thread %ld starting...\n",tid);
-  for (i=0; i<20000000; i++)
+  for (i=0; i<200000000; i++)
     {
       result = result + sin(i) * tan(i);
     }
@@ -35,6 +35,7 @@ int main (int argc, char *argv[])
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
+  // Create the detached threads
   for(t=0; t<NUM_THREADS; t++) {
     printf("Main: creating thread %ld\n", t);
     rc = pthread_create(&thread[t], &attr, BusyWork, (void *)t); 
@@ -44,8 +45,11 @@ int main (int argc, char *argv[])
     }
   }
 
-  /* Free attribute and wait for the other threads */
+  /* Free attribute */
   pthread_attr_destroy(&attr);
+
+  // Normally we would call join etc, but as the threads are detached, this would result in an error.
+
   // for(t=0; t<NUM_THREADS; t++) {
   //   rc = pthread_join(thread[t], &status);
   //   if (rc) {
@@ -56,6 +60,8 @@ int main (int argc, char *argv[])
   // }
  
   printf("Main: program completed. Exiting.\n");
-  // pthread_exit(NULL);
+  
+  // Removing this call would result in killing the threads, this way the program waits for the threads to finish
+  pthread_exit(NULL);
 }
 
