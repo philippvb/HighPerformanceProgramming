@@ -2,8 +2,9 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-const long int N1 = 0; //400000000;
-const long int N2 = 800000000;
+// Most even split, leads to lowest runtime
+const long int N1 = 400000000;
+const long int N2 = 400000000;
 
 double get_wall_seconds(){
   struct timeval tv;

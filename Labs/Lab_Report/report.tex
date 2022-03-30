@@ -1,0 +1,144 @@
+\documentclass[a4paper]{scrartcl}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{pgfplots}
+\usepackage{amsmath, enumerate, amssymb, multirow, fancyhdr, color, graphicx, lastpage, listings, tikz, pdflscape, subfigure, float, polynom, hyperref, tabularx, forloop, geometry, listings, fancybox, tikz, forest, tabstackengine, cancel, algorithm, listings}
+\usepackage[noend]{algpseudocode}
+
+\makeatletter
+\def\BState{\State\hskip-\ALG@thistlm}
+\makeatother
+
+\input kvmacros
+\geometry{a4paper,left=3cm, right=3cm, top=3cm, bottom=3cm}
+\pagestyle{fancy}
+\title{Semiar 2 Report - PThreads}
+\author{Philipp Noel von Bachmann}
+
+
+\begin{document}
+\maketitle
+\section{Lab08\_Pthreads\_I}
+    \subsection{Task 1}
+        The code produces the following output:\\
+        \begin{lstlisting}[language=bash]
+            This is the main() function starting.
+            the main() function now calling pthread_create().
+            This is the main() function after pthread_create()
+            main() starting doing some work.
+            second thread() starting doing some work.
+            thread() starting doing some work.
+            Result of work in second thread(): sum = 0.010000
+            Result of work in main(): sum = 10.000000
+            the main() function now calling pthread_join().
+            Result of work in thread(): sum = 99.999998
+        \end{lstlisting}
+        We see that first the threads are created, and then the main function is
+        doing some work. Since the workload in the second thread is the
+        samllest, it finished first. After that the mam function finished its
+        work. That when we call join. Now we wait for all threads to join, which
+        means waiting for thread 1, since its the only one left working.
+
+    \subsection{Task 2}
+        \begin{lstlisting}[language=bash]
+            This is the main() function starting. 
+            the main() function now calling pthread_create(). 
+            This is the main() function after pthread_create()
+            the main() function now calling pthread_join().
+            The values are 5.700000 9.200000 1.600000 
+            The values are 1.000000 2.000000 3.000000 
+        \end{lstlisting}
+        We can see that by giving different data to the threads, we get
+        different results, thus showing that we acces the data given to the
+        threads in the right way.
+
+    \subsection{Task 3}
+        We compare the runtime:\\[10pt]
+        \noindent\begin{tabular}{c|c|c|c}
+            Split & 800000000/0 & 700000000/100000000 & 400000000/400000000 \\
+            \hline
+            Runtime (s) & 0.39 & 0.34 & 0.21 \\
+        \end{tabular}\\[10pt]
+        The runtime nearly havens for the most even split compared to the most
+        uneven, which we would expect since the work can be done perfectly in
+        parallel and in the even case both threads get the same amount of work.
+        We also see that if we don't balance the work evenly, we get a small
+        increase in runtime but one thread has to wait for the other one to
+        finish.
+
+    \subsection{Task 4}\label{sub:Task4} As proposed, we take the naive
+        algorithm where we just loop over all smaller numbers and try to divide
+        to determine if a number is prime. In the outer loop, we just loop over
+        all numbers up to the input $N$ to count the primes up to $N$. Now we
+        create two threads and give each of them a start and end value between
+        which it should count the primes. In addition it gets a variable to
+        write the final count to. Since for large numbers, the workload per
+        number becomes higher, just splitting the number range evenly between
+        threads will likely result in unbalanced workload. Thus, we also try a
+        different split. The results for $N=100000$ are:\\[10pt]
+        \noindent\begin{tabular}{c|c|c|c}
+            Split & Single thread & $\frac{1}{2}$ and $\frac{1}{2}$  & $\frac{2}{3}$ and $\frac{1}{3}$ \\
+            \hline
+            Runtime (s) & 0.3 & 0.22 & 0.17 \\
+        \end{tabular}\\[10pt]
+        We see that if we divide half-half, we don't get an increase in runtime
+        of two because of imbalanced work, as expect. By giving the first thread
+        (which iterates over the smaller numbers) more total number, we get a
+        more even work and nearly reach a halfen of runtime.
+
+    \subsection{Task 5}
+        We pass the id to thread as an integer. Since integers are smaller than
+        pointers, we can pass the integer directly instead of needing to pass a
+        pointer to it. The result for $N=4$ is:\\
+        \begin{lstlisting}[language=bash]
+            Thread 0
+            Thread 2
+            Thread 3
+            Thread 1
+        \end{lstlisting}
+        We see that even though we create the threads in order, the print
+        statement is in a different order, which shows that the creation if
+        threads takes a very small amount of time and thus all threads compete
+        about who can print first.
+
+    \subsection{Task 6}
+        Our code is nearly identical to \ref{sub:Task4}, except that we now have
+    a variable number of threads $M$. Results for $N=100000$:\\[10pt]
+    \noindent\begin{tabular}{c|c|c|c|c|c|c}
+        $M$ & 1 & 2 & 4 & 8 & 10 & 20 \\
+        \hline
+        Runtime (s) & 0.32 & 0.24 & 0.15 & 12 & 0.1 & 0.09
+    \end{tabular}\\[10pt]
+    We see that our increase is less than linear, which we would expect from
+    \ref{sub:Task4}, since dividing the range up evenly leads to an unbalanced
+    workload split. Nevertheless, we see an decrease in runtime the more thread
+    we add, since every new thread cuts the range per thread smaller. However
+    when we go over the number of available cores (8), the speed-up slows down
+    significatly, since we don't have more cores to compute in parallel. The
+    speed up here mostly comes through other things like instruction level
+    parallelism.
+
+    \subsection{Task 7}
+        \begin{lstlisting}[language=bash]
+            Hello from thread
+            Hello from thread
+            Hello from SubThread
+            Hello from SubThread
+            Hello from SubThread
+            Hello from SubThread
+        \end{lstlisting}
+        We see that each of the 2 threads gets called, and all of the 2x2 subthreads
+        as well.
+    
+    \subsection{Task 8}
+        If we don't protect the \textbf{sum} variable by a mutex, we get a
+        different result every time since all threads try to write to the
+        variable at the same time and the results become random. However when
+        protecting the variable, we get the same result every time, since the
+        mutex just allows one threads to write to the sum variable at a time,
+        and the other threads have to wait for their turn.
+    
+
+
+\end{document}
+

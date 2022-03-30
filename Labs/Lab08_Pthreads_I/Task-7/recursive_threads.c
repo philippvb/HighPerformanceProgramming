@@ -3,19 +3,16 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-// typedef struct threaddata
-// {
-//     int level;
-//     int id;
-// } threaddata;
+
 
 void* thread_hello(void* data){
-    printf("Hello from Thread\n");
+    printf("Hello from SubThread\n");
     return NULL;
 }
 
 void* create_threads(void * data){
     pthread_t thread1, thread2;
+    printf("Hello from thread\n");
     pthread_create(&thread1, NULL, thread_hello, NULL);
     pthread_create(&thread2, NULL, thread_hello, NULL);
     pthread_join(thread1, NULL);

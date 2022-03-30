@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 
+// the data for each thead as a structure
 typedef struct threaddata
 {
     int start;
@@ -29,7 +30,6 @@ int isprime(int i){
 
 void* count_primes(void* values){
     threaddata* data = (threaddata*) values;
-    // printf("Start %d, end %d\n", data->start, data->end);
     for(int i=data->start; i<=data->end; i++){
         data->sum += isprime(i);
     }
@@ -56,6 +56,7 @@ int main(int argc, char *argv[]) {
         threaddata data[M];
         double start = get_wall_seconds();
         int block_size = N/M;
+        // create all the threads
         for(int i=0; i<M; i++){
             data[i].start=i*block_size+1;
             data[i].end=(i+1)*block_size;
@@ -63,6 +64,7 @@ int main(int argc, char *argv[]) {
             pthread_create(threads + i, NULL, count_primes, data + i);
         }
 
+        // join and count all results
         int n_primes=0;
         for(int i=0; i<M; i++){
             pthread_join(threads[i], NULL);

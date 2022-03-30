@@ -13,6 +13,7 @@ double get_wall_seconds(){
 }
 
 
+// Checks if a number is prime
 int isprime(int i){
     for(int j=2; j<i; j++){
         if(i%j==0){
@@ -22,6 +23,7 @@ int isprime(int i){
     return 1;
 }
 
+// Count all primes in a range, see main for args
 void* count_primes(void* values){
     int* int_values = (int*) values;
     for(int i=int_values[0]; i<=int_values[1]; i++){
@@ -33,6 +35,7 @@ void* count_primes(void* values){
 int main(int argc, char *argv[]) {
     if (argc != 2) return -1;
     
+    // up to which number to count the primes
     const int N = atoi(argv[1]);
     if(N<1){
         printf("Please enter a positive number\n");
@@ -45,8 +48,9 @@ int main(int argc, char *argv[]) {
 
         #if THREADED
         int thread_1_data[3], thread_2_data[3]; 
+        // each thread gets its data as [lower, upper, result]
         thread_1_data[0] = 1;
-        thread_1_data[1] = N*2/3;
+        thread_1_data[1] = N*2/3; // 2/3 split
         thread_1_data[2] = 0;
         thread_2_data[0] = N*2/3+1;
         thread_2_data[1] = N;
@@ -62,6 +66,7 @@ int main(int argc, char *argv[]) {
         printf("There are %d primes from 0 to %d\n", thread_2_data[2] + thread_1_data[2], N);
 
         #else
+        // inital serial code
         int total_primes = 2;
         double start = get_wall_seconds();
         for(int i=3; i<=N; i++){
