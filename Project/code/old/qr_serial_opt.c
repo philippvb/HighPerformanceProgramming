@@ -3,12 +3,7 @@
 #include <math.h>
 #include <sys/time.h>
 
-#define EPS 1e-15
-#define USE_EXAMPLE 0
-
-inline int min(int a, int b){
-    return (a<b) * a + (b<=a) * b;
-}
+#define EXAMPLE 1
 
 
 double get_wall_seconds(){
@@ -47,32 +42,39 @@ inline void matmul_givens_Q(givens_t g, double* X, int n){
     double* col_copy = malloc(2*n*sizeof(double));
     // copy the two cols in intermediate matrix
     for(int i=0; i<n; i++){
-        col_copy[i] = X[g.i * n + i];
-        col_copy[n+i] = X[g.j * n + i];
+        col_copy[i] = X[i * n + g.i];
+        col_copy[n+i] = X[i * n + g.j];
     }
-    
+    // iterate over all cols
     for(int k=0; k<n; k++){
         // X_ki = c * A_ki - s * A_kj
-        X[g.i*n + k] = g.c * col_copy[k] - g.s * col_copy[n+k];
+        X[k*n + g.i] = g.c * col_copy[k] - g.s * col_copy[n+k];
 
         // X_kj = s * A_ik + c * A_kj
-        X[g.j*n + k] = g.s * col_copy[k] + g.c * col_copy[n+k];        
+        X[k*n + g.j] = g.s * col_copy[k] + g.c * col_copy[n+k];        
     }
     free(col_copy);
 }
 
+// /**
+//  * @brief computes the naive givens factors for a given A and B
+//  * 
+//  * @param a the a in the col
+//  * @param b the b in the col
+//  */
+// double* compute_givens_factors(double a, double b){
+//     // printf("%f, %f\n", a, b);
+//     double* sol = malloc(2*sizeof(double));
+//     double r = 1/sqrt(a*a + b*b);
+//     sol[0] = a*r;
+//     sol[1] = b*r;
+//     return sol;
+// }
+
 inline void compute_givens_factors(double a, double b, givens_t* G){
-    double t;
-    if(fabs(a)>fabs(b)){
-        t = a/b;
-        G->s = ((b > 0) - (b < 0))/sqrt(1+pow(t,2));
-        G->c = G->s * t;
-    }
-    else{
-        t = b/a;
-        G->c = ((a > 0) - (a < 0))/sqrt(1+pow(t,2));
-        G->s = G->c * t;
-    }
+    double r = 1/sqrt(a*a + b*b);
+    G->c = a*r;
+    G->s = b*r;
 }
 
 
@@ -82,7 +84,7 @@ double* matmul(double* A, double* B, int l, int m, int n){
     for(int i=0; i<l; i++){
         for(int j=0; j<n; j++){
             for(int k=0; k<m;k++){
-                C[i*n+j] += A[k*m+i] * B[k*n+j];
+                C[i*n+j] += A[i*m+k] * B[k*n+j];
             }
         }
     }
@@ -100,18 +102,10 @@ void printm(double* A, int m, int n){
 
 void check_factorization(double* A, double* Q, double* R, int m, int n){
     double* A_prime = matmul(Q, R, m, m, n);
-    // first we check if Q is upper triangular
-    for(int i=0; i<m; i++){
-        for(int j=0; j<min(i, n); j++){
-            if(fabs(R[i*n+j]) >= EPS){
-                printf("WARNING: Check failed, the lower triangle of R seems to contain other values than 0 at pos %d, %d, value %f\n", i, j, R[i*n+j]);
-                return;
-            }
-            // set values to 0, since during factorization rounding error occures
-            R[i*n+j] = 0.0;
-        }
-    }
-    // check the actual factorization
+    // printf("Checking factorization\n");
+    // printm(A_prime, m, n);
+    // printf("\n");
+    // printm(A, m, n);
     double diff=0;
     for(int i=0; i<m*n; i++){
         diff += fabs(A[i] - A_prime[i]);
@@ -143,17 +137,28 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
     for(int i=0; i<m*n; i++){
         R[i] = A[i];
     }
+    double* G_int_factors;
     givens_t g;
+    // printm(Q, m, m);
+    // printm(R, m, n);
+
+    // printf("Starting factorization\n");
 
     for(int j=0; j<n; j++){
         for(int i=m-1; i>j; i--){
             compute_givens_factors(R[(i-1)*n+j], R[i*n+j], &g);
+            // printf("i %d, j %d\n", i, j);
+            // printf("%f, %f\n", R[(i-1)*n+j], R[i*n+j]);
+            // printf("c:%f, s: %f \n", G_int_factors[0], G_int_factors[1]);
             g.i = i;
             g.j = i-1;
             matmul_givens_R(g, R, m, n);
+            // printm(R, m, n);
             matmul_givens_Q(g, Q, m);
+        // printm(Q, m, m);
         }
     }
+    // printf("Finished\n");
     *Q_p = Q;
     *R_p = R;
 }   
@@ -172,7 +177,7 @@ double* create_random(int i, int j){
 
 int main(int argc, char *argv[]){
 
-#if !USE_EXAMPLE
+#if EXAMPLE
     if(argc != 3) {
     printf("Give 2 input args: m, n\n");
     return -1;
@@ -202,8 +207,19 @@ int main(int argc, char *argv[]){
     check_factorization(T, Q, R, i, j);
     free(Q);
     free(R);
-#if !USE_EXAMPLE    
+#if EXAMPLE    
     free(T);
 #endif
+    // G_int_factors = compute_givens_factors(T[(4-1)*j+1], T[4*j+1]);
+    // // printf("c:%f, s: %f \n", G_int_factors[0], G_int_factors[1]);
+    // G_int = create_givens(4, 4-1, G_int_factors[0], G_int_factors[1], i);
+    // // printm(G_int, m, m);
+    // R_new = matmul(G_int, T, i, i, j);
+    // printm(R_new, i, j);
+    // printf("\n");
+
+    // givens_t g = {4, 4-1, G_int_factors[0], G_int_factors[1]};
+    // matmul_givens_R(g, T, i, j);
+    // printm(T, i, j);
     return 0;
 }

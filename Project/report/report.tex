@@ -7,21 +7,22 @@
 \input kvmacros
 \geometry{a4paper,left=3cm, right=3cm, top=3cm, bottom=3cm}
 \pagestyle{fancy}
-\title{Final project for the Course High Performance Programming, Philipp Noel von Bachmann}
+\title{Final project for the Course High Performance Programming, QR Factorization}
+\author{Philipp Noel von Bachmann}
 
 
 \begin{document}
 \maketitle
 \section{Introduction}
     Machine Learning and Data analysis are some of the most influencial fields
-    in our current society. One of the main task in Machine Learning is to give
+    in our current society. One of the main tasks in Machine Learning is to give
     a prediction based on some input variables. A common algorithm to use is
-    linear-least-square, which finds the best fit for a linear model. Here, we
+    linear-least-squares, which finds the best fit for a linear model. Here, we
     need an efficient way to calculate this fit. In Data analysis, a common tool
-    is the Principal Component analysis, which tries to reduce the
-    dimensionality of the data in a way, that the reconstruction error gets
-    minimized. PCA relies on an eigenvalue decomposition. For both methods, we
-    can use the QR decomposition too speed up the computation.
+    is the Principal Component Analysis, which tries to reduce the
+    dimensionality of the data such that the reconstruction error gets
+    minimized. PCA relies on eigenvalue decomposition. For both methods, we
+    can use the QR decomposition to speed up the computation.
 
 
 \section{Problem description}
@@ -38,155 +39,335 @@
     algorithm relies on construction a sequences of matrices $G_i$, such that
     when multiplying $A$ with $G_i$, we get a new matrix with a zero at a
     predefined place. Choosing $G_i$ such that we eliminate the lower diagonal
-    of A, we end up with a $R$ and by multiplying all $G_i$ with $Q$. We will
-    first show how to eliminate one value at the time by constructing $G_i$ and
-    then how to combine these.
+    of $A$, we get $R$ by multiplying $A$ with all $G_i$ from the left-hand. In
+    addition we get $Q$ by multiplying the identity matrix will all $G_i$ from
+    the right-hand side. We will first show how to eliminate one value at the
+    time by constructing $G_i$ and then how to combine these.
 
-    \subsection{Givens rotation}
-        First, we define a Givens rotation matrix as 
-        \begin{equation}\label{eq:Givens}
-            G(i,j,\theta) = \begin{bmatrix} 
-                1   &   &   \\
-                    &   \ddots&   \\
-                    &   & c_{ii} & \cdots& -s_{ij}\\
-                    &   & \vdots & \ddots & \vdots\\
-                    &   & s_{ji} & \cdots & c_{jj}\\
-                    &   &  & & &\ddots\\
-                    &   &  & & &&1\\            
-                \end{bmatrix}
-        \end{equation}
-        where $c=\cos(\theta)$, $s=\sin(\theta)$ and any not filled out values are 0.
-        Note: Therefore we can equally represent $G$ by $G(i,j,c,s)$
-    
-    \subsection{Eliminating one value}
-        Now the goal is to find a Givens rotation matrix to eliminate/set to 0 a
-        specific $A_{ij}$. This is equivalent to finding $\theta$ such that
-        \begin{equation}
-            G(i,j,\theta)^T \begin{bmatrix} 
-                \times\\
-                \vdots\\
-                a\\
-                \vdots\\
-                b\\
-                \vdots\\
-                \times
-                \end{bmatrix}
-            = \begin{bmatrix} 
-                \times\\
-                \vdots\\
-                r\\
-                \vdots\\
-                0\\
-                \vdots\\
-                \times
-                \end{bmatrix}
-        \end{equation}
-        where $\times$ are arbitrary numbers $a,b \in \mathbb{R}$, $r=\sqrt{a^2+b^2}$. 
-        A trivial solution would be 
-        % \begin{align}
-        %     c = \frac{a}{r} & s = \frac{-b}{r}
-        % \end{align}.
-        \begin{multicols}{2}
-            \begin{equation}
-                c = \frac{a}{r}
-            \end{equation}\break
-            \begin{equation}
-                s = \frac{b}{r}
+    \subsection{Prerequisites}
+
+        \subsubsection{Givens rotation}
+            First, we define a Givens rotation matrix as 
+            \begin{equation}\label{eq:Givens}
+                G(i,j,\theta) = \begin{bmatrix} 
+                    1   &   &   \\
+                        &   \ddots&   \\
+                        &   & c_{ii} & \cdots& -s_{ij}\\
+                        &   & \vdots & \ddots & \vdots\\
+                        &   & s_{ji} & \cdots & c_{jj}\\
+                        &   &  & & &\ddots\\
+                        &   &  & & &&1\\            
+                    \end{bmatrix}
             \end{equation}
-          \end{multicols}
-        However, $r$ is prone to overflow, so we can instead store it in a
-        different way. If
-        \begin{itemize}
-            \item $\lvert b \rvert \geq \lvert a \rvert$:\\
-                $t=\frac{a}{b}$, $s=\frac{sgn(b)}{\sqrt{1+t^2}}, c=st$
-            \item else:\\
-                $t=\frac{b}{a}$, $c=\frac{sgn(a)}{\sqrt{1+t^2}}, s=ct$
-        \end{itemize}
+            where $c=\cos(\theta)$, $s=\sin(\theta)$ and any not filled out values are 0.
+            Note: Therefore we can equally represent $G$ by $G(i,j,c,s)$.
+        
+        \subsubsection{Eliminating one value}
+            Now the goal is to find a Givens rotation matrix to eliminate/set a
+            specific $A_{ij}$ to 0. This is equivalent to finding $\theta$ such
+            that
+            \begin{equation}
+                G(i,j,\theta)^T \begin{bmatrix} 
+                    \times\\
+                    \vdots\\
+                    a\\
+                    \vdots\\
+                    b\\
+                    \vdots\\
+                    \times
+                    \end{bmatrix}
+                = \begin{bmatrix} 
+                    \times\\
+                    \vdots\\
+                    r\\
+                    \vdots\\
+                    0\\
+                    \vdots\\
+                    \times
+                    \end{bmatrix}
+            \end{equation}
+            where $\times$ are arbitrary numbers $a,b \in \mathbb{R}$, $r=\sqrt{a^2+b^2}$. 
+            A trivial solution would be 
+            % \begin{align}
+            %     c = \frac{a}{r} & s = \frac{-b}{r}
+            % \end{align}.
+            \begin{multicols}{2}
+                \begin{equation}
+                    c = \frac{a}{r}
+                \end{equation}\break
+                \begin{equation}
+                    s = \frac{b}{r}
+                \end{equation}
+            \end{multicols}
+            However, $r$ is prone to overflow, so we can instead store it in a
+            different way. If
+            \begin{itemize}\label{eq:Givens_stable}
+                \item $\lvert b \rvert \geq \lvert a \rvert$:\\
+                    $t=\frac{a}{b}$, $s=\frac{sgn(b)}{\sqrt{1+t^2}}, c=s\cdot t$
+                \item else:\\
+                    $t=\frac{b}{a}$, $c=\frac{sgn(a)}{\sqrt{1+t^2}}, s=c\cdot t$
+            \end{itemize}
 
-        This leads to the following algorithm
-        \begin{algorithm}[H]
-            \caption{computing Givens rotation to eliminate $A_{i,j}$}\label{alg:Givens}
-            \begin{algorithmic}[1]
-            \Procedure{Givens}{$A$, $i$, $j$}
-                \State choose $k \in {0, \dots i-1}$
-                \State compute $G(i,k,c,s)$ with $a=A_{k,j}$, $b=A_{i,j}$ 
-                \State \Return G
-            \EndProcedure
-            \end{algorithmic}
-        \end{algorithm}
-        We note that we can choose $k\in {0, \dots i-1}$ arbitrary, the next
-        section will explain this choice in more detail.
-
-
-    \subsection{Order of elimination}\label{sub:ElimOrder}
+            This leads to the following algorithm
+            \begin{algorithm}[H]
+                \caption{computing Givens rotation to eliminate $A_{i,j}$}\label{alg:Givens}
+                \begin{algorithmic}[1]
+                \Procedure{Givens}{$A$, $i$, $j$}
+                    \State choose $k \in {0, \dots i-1}$
+                    \State compute $G(i,k,c,s)$ with $a=A_{k,j}$, $b=A_{i,j}$ 
+                    \State \Return G
+                \EndProcedure
+                \end{algorithmic}
+            \end{algorithm}
+            We note that we can choose $k\in {0, \dots i-1}$ arbitrary, the next
+            section will explain this choice in more detail.
     
-    The next question is which order of elimination to choose. Here, we note
-    that if we compute the Givens rotation to eliminate $A_{i,j}$, we then need
-    to multiply $GA$ to eliminate the value. This multiplication affects the
-    whole row $i$ and $k$ of $A$, where we choose $k$ freely, see algorithm
-    \ref{alg:Givens}. In turn, if we don't want to discard other 0s (say
-    $A_{i,l}$ for example) in those rows again, we need to make sure that
-    $A_{k,l}$ is also 0.
+    
+    \subsection{Naive QR-Factorization}
 
-    As an more illustrative example, let us assume that we have
-    $R= \begin{bmatrix}
-        x & x & x \\
-        a& x & x \\
-        b=0 & c & x \\
-    \end{bmatrix}$. Now we want to set $c=0$. This in turn modifies row 1,2 in
-    $R$ afterwards, which means $a$ needs to be 0 in order to keep
-    $b=0$.
+        \subsubsection{Order of elimination}\label{sub:ElimOrder}
+        
+        The next question is which order of elimination to choose. Here, we note
+        that if we compute the Givens rotation to eliminate $A_{i,j}$, we then need
+        to multiply $GA$ to eliminate the value. This multiplication affects the
+        whole row $i$ and $k$ of $A$, where we choose $k$ freely, see algorithm
+        \ref{alg:Givens}. In turn, if we do not want to discard other 0s (say
+        $A_{i,l}$ for example) in those rows again, we need to make sure that
+        $A_{k,l}$ is also 0.
 
-    One commonly used scheme is to eliminate all columns after each other from 0
-    to n-1 and per column go from bottom to top, which looks like this for a $5\times 5$ matrix:
-    \begin{equation}\label{eq:It_Scheme}
-        \begin{bmatrix}
-            x & x & x & x & x \\
-            3 & x & x & x & x \\
-            2 & 6 & x & x & x \\
-            1 & 5 & 8 & x & x \\
-            0 & 4 & 7 & 9 & x \\
-        \end{bmatrix}
-    \end{equation}
-    where the numbers indicate the order of elimination. It is easy to see that
-    now all previously eliminated columns will stay 0.
+        As an more illustrative example, let us assume that we have
+        $R= \begin{bmatrix}
+            x & x & x \\
+            a& x & x \\
+            b=0 & c & x \\
+        \end{bmatrix}$. Now we want to set $c=0$. This in turn modifies row 1,2 in
+        $R$ afterwards, which means $a$ needs to be 0 in order to keep
+        $b=0$.
+
+        One commonly used scheme is to eliminate all columns after each other from 0
+        to n-1 and per column go from bottom to top, which looks like this for a $5\times 5$ matrix:
+        \begin{equation}\label{eq:It_Scheme}
+            \begin{bmatrix}
+                x & x & x & x & x \\
+                3 & x & x & x & x \\
+                2 & 6 & x & x & x \\
+                1 & 5 & 8 & x & x \\
+                0 & 4 & 7 & 9 & x \\
+            \end{bmatrix}
+        \end{equation}
+        where the numbers indicate the order of elimination. It is easy to see that
+        now all previously eliminated columns will stay 0.
 
 
-    \subsection{Final algorithm}
-        The elimination scheme \ref{eq:It_Scheme} leads to the following
-        algorithm.
-        \begin{algorithm}[H]
-            \caption{QR factorization with Givens rotation}\label{alg:QR_Givens}
-            \begin{algorithmic}[1]
-            \Procedure{Factorize}{$A \in \mathbb{R}^{m\times n}$}
-            \State set $R=A$, $Q=I$
-            \For{$j$ in 1 to $n$}
-                \For{$i$ in $m$ down to $j+1$}
-                    \State $G =$ \Call {Givens}{$A$, $i$, $j$} with $k=i-1$
-                    \State set $R=G(i,j,c,s) R$, $Q = Q G(i,j,c,s)$
+        \subsubsection{Resulting algorithm}
+            The elimination scheme \ref{eq:It_Scheme} leads to the following
+            algorithm.
+            \begin{algorithm}[H]
+                \caption{QR factorization with Givens rotation}\label{alg:QR_Givens}
+                \begin{algorithmic}[1]
+                \Procedure{Factorize}{$A \in \mathbb{R}^{m\times n}$}
+                \State set $R=A$, $Q=I$
+                \For{$j$ in 1 to $n$}
+                    \For{$i$ in $m$ down to $j+1$}
+                        \State $G =$ \Call {Givens}{$A$, $i$, $j$} with $k=i-1$
+                        \State set $R=G(i,j,c,s) R$, $Q = Q G(i,j,c,s)$
+                    \EndFor
                 \EndFor
-            \EndFor
-            \EndProcedure
+                \EndProcedure
+                \end{algorithmic}
+            \end{algorithm}
+
+    \subsection{Serial Optimization}\label{sub:Serial}
+
+        \subsubsection{Optimizing Matrix-Multiplication}
+            In general, we could optimize the matrix multiplication with common
+            techniques like cache-blocking, etc. However, if we take a closer
+            look at the Givens rotation matrices, we see that they are very
+            sparse. Additionally, we know in advance which entries of the givens
+            rotation wil be nonzero. Thus we can optimize our matmul. First of
+            all, we can only recalculate columns that will get modified by the
+            multiplication. If we multiply $GR$, where $G=G(i,j,c,s)$, then we
+            only need to modify rows $i,j$ in $R$. Secondly, we know that for
+            calculating those rows we only need to muliply by the $c,s$ in the
+            corresponding row of $G$, since all other values are 0.
+
+            We need further distinguish between multiplication $GR$ and $QG$. We
+            show the pseudo-code for $GR$.
+
+            \begin{algorithm}[H]
+                \caption{optimized $GR$ Matmul with Givens}\label{alg:Matmul_Fast}
+                \begin{algorithmic}[1]
+                \Procedure{Matmul\_GR}{$G=G(i,j,c,s)$, $R$, $start$}
+                    \State copy the two rows i,j of R into temporary array $T = \begin{bmatrix}
+                        R_{i, :} \\
+                        R_{j, :} \\
+                    \end{bmatrix}$
+
+                \For{$k$ in columns of $R$ larger than $start$}
+                    \State $R_{i, k} = c \cdot T_{1, k} - s \cdot T_{2, k}$
+                    \State $R_{j, k} = s \cdot T_{1, k} + c \cdot T_{2, k}$
+                \EndFor
+                \Return $R$
+                \EndProcedure
+                \end{algorithmic}
+            \end{algorithm}
+
+            We can also start only changing values from column $start$ on, since from
+            our general algorithm \ref{alg:QR_Givens} we know that all values in
+            columns smaller than $k$ are already eliminated. Note that this is only
+            true for the multiplication $GR$, not $QG$.
+
+            This optimization is optimal from a serial perspective, since each of
+            the elements in the respective rows and columns we recompute values in
+            could potientially get modified by our rotation. Therefore, we cannot
+            reduce the matmul to fewer operations.
+            
+        \subsubsection{Memory optimization}
+            The improved matrix multiplication algorithm \ref{alg:Matmul_Fast}
+            shows that we only need to access two rows per multiplication to
+            perform the update of $R$, for $Q$ we need to access two columns
+            however. Ultimately, we want to access matrix elements as close to
+            each other as possible, since by reading one element, we read the
+            whole cache-line and have faster access to nearby elements in the
+            following steps. Therefore, it makes sense to store $R$ row-wise,
+            and $Q$ column-wise. In that way, we get the most optimal data
+            locality for $Q$ and $R$.
+        
+        \subsubsection{Further serial optimizations}
+            The following further small optimizations were thought, although
+            some were rejected for the following reasons:
+
+            \begin{itemize}
+                \item Wrote pow calls out (however compiler flag probably does it already) (accepted)
+                \item Inlined functions by using the compiler hint \textbf{inline} (accepted)
+                \item Declared the size of $A$ as constant to help compiler do some optimizations (accepted)
+                \item Do not unroll loops, since there are no loops whose size is certain at compile times (rejected)
+            \end{itemize}
+        
+        \subsubsection{Using optimizer flags}
+            Of course we tried all common optimizer flags, to further optimize
+            the code, see result \ref{res:OptFLag} for discussion.
+
+            
+    \subsection{Parallel optimization}\label{sec:Parallel}
+        In order to parallelize our code, we first need to check which
+        parts can be done in parallel. First, note that the computation
+        of the Givens rotation in line 5 of algorithm
+        \ref{alg:QR_Givens} is a pure function, eg. just depends on the
+        inputs and does not have any side effects. Thus, we only need to
+        focus on updating $Q,R$ in line 6. Here, it is necessary to
+        distinguish in two cases:
+        \begin{itemize}
+            \item For left-hand Givens rotation $GR$, if $G=G(i,j,c,s)$,
+            only rows $i,j$ of $R$ get modified
+            \item For right-hand Givens rotation $QG$, if
+            $G=G(i,j,c,s)$, only columns $i,j$ of $Q$ get modified
+        \end{itemize}
+        Consequently, two update steps rotating around
+        $G(i_1,j_1,c_1,s_1)$ and $G(i_2,j_2,c_2,s_2)$ are independent,
+        if $i_1, i_2, j_1, j_2$ are pairwise distinct. This means we
+        need to make sure that if we set $R_{i,j}$ to 0 in one
+        iteration, we can set any other elements in Row $i,j$ to 0 in
+        the same iteration, in order to not interfere between the
+        computations.
+        
+        
+        In combination with the constraint that if we want to set
+        $R_{i,j}$ to 0, $R_{i, :j}$ and $R_{i-1, :j}$ already need to be
+        0, (see Section \ref{sub:ElimOrder}) we arrive at the following
+        scheme, shown for a $5\times 5$ matrix:
+        \begin{equation}\label{eq:It_Scheme_Parallel}
+            \begin{bmatrix}
+                x & x & x & x & x \\
+                3 & x & x & x & x \\
+                2 & 4 & x & x & x \\
+                1 & 3 & 5 & x & x \\
+                0 & 2 & 4 & 6 & x \\
+            \end{bmatrix}
+        \end{equation}
+        where the values denote in which iteration we can set the element to 0
+        without cross-interference. This shows that we can set $R_{2,0}$ and
+        $R_{4,1}$ to 0 in parallel for example. 
+        
+        This scheme is optimal since we can only eliminate $R_{i,j}$ if $R_{i,
+        :j}$ and $R_{i-1, :j}$ are already 0. This upper-bounds the number of
+        rows we can update in each iteration. Furthermore, in each of those
+        iterations we update all possible rows, so there is no way of updating
+        more elements without cross-interfering.
+
+        We arrive at the parallel algorithm:
+        \begin{algorithm}[H]
+            \caption{parallel QR factorization }\label{alg:QR_Parallel}
+            \begin{algorithmic}[1]
+                \Procedure{Factorize\_Parallel}{$A \in \mathbb{R}^{m\times n}$}
+                    \State set $R=A$, $Q=I$
+                    \For{$it$ in 1 to $(n-1)*2+m-n$}
+                        \State In parallel:
+                        \For{$i,j$ given by the iteration scheme \ref{eq:It_Scheme_Parallel}}
+                            \State $G =$ \Call {Givens}{$A$, $i$, $j$} with $k=i-1$
+                            \State set $R=G(i,j,c,s) R$, $Q = Q G(i,j,c,s)$
+                        \EndFor
+                    \EndFor
+                \EndProcedure
             \end{algorithmic}
         \end{algorithm}
+
+        The code was getting parallelized with \textbf{OpenMP}. Since we
+        have equal load in line 6+7 of algorithm \ref{alg:QR_Parallel},
+        we do not need to use load balancing.
+
+        Looking at \ref{eq:It_Scheme_Parallel}, we cannot expect a linear
+        scaling with the number of threads. For example in iteration 0 and 1, we
+        only have 1 element so there is no speedup by using more threads. More
+        formally if $A \in \mathbb{R}^{m\times n}$, then we can have a maximum
+        of $\min(m/2, n)$ computations running in parallel, achieved in the
+        iteration where we set $R_{1,0}$ to 0. In general, we get more elements
+        to eliminate in parallel the further the iterations.
+
 
 
 \section{Code}
-    TODO: add
-    \subsection{Check for correctness}
+    The code is structured the same way as the solution described. We include 3 different versions:
+    \begin{itemize}
+        \item \textbf{qr\_base.c}: The baseline algorithm \ref{alg:Givens}.
+        \item \textbf{qr\_serial.c}: The serial optimized algorithm, this means the whole section \ref{sub:Serial}
+        \item \textbf{qr.c}: The final algorithm, with all optimization.
+    \end{itemize}
+    In the file \textbf{qr.c} the code is commented, the others files have
+    mostly the same functions so we did not comment these. For building the
+    code, a \textbf{Makefile} is included.
+
 
 \section{Experiments and Results}
 
-    \subsection{Hardware description}
+    \subsection{Hardware information}
+        \begin{itemize}
+            \item CPU: Apple M1 with 4 performance cores and 4 efficiency cores
+            \item GPU: Apple M1 8 core.
+            \item Compiler: Slang, Version 13.0.0
+            \item Plugged into power adapter, this makes a big difference!
+        \end{itemize}
 
-    \subsection{Format}
+    \subsection{Correctness of code}
+        In order to evaluate the correctness of the code, we run a test script.
+        First, we check that $R$ is upper triangular, here we allow a small
+        tolerance, since the computation of the Givens rotation even in its more
+        stable form \ref{eq:Givens_stable} has some rounding errors. However we
+        set the lower diagonal afterwards to 0, in order to ensure correct
+        results. Then we verify that mutiplying $QR$ indeed results in $A$.
+        
+        Note that we did not optimize this part of the code, since in practice
+        the verification is not required to get to the solution.
+
+    \subsection{Format of Results}
         In the following section, we will show timing results for different
-        matrix sizes. We denote the sizes by $i,j$, which we defined as
-        decomposing the matrix $A \in \mathbb{R}^{i\times j}$.
+        matrix sizes. We denote the sizes by $m,n$, which we defined as
+        decomposing the matrix $A \in \mathbb{R}^{m\times n}$, therefore $Q \in
+        \mathbb{R}^{m\times m}$ and $R\in \mathbb{R}^{m\times n}$.
 
-    \subsection{Baseline Results}
-        The following table shows the results for the base algorithm, given in
-        file \textbf{qr\_base.c}.\\
+    \subsection{Baseline Results}\label{res:Baseline}
+        The following table shows the results for the base algorithm
+        \ref{alg:QR_Givens}.
         
         \noindent\begin{tabular}{c|c|c|c|c}
         \backslashbox{$m$}{$n$} & 10 & 25 & 50 & 100 \\
@@ -197,272 +378,188 @@
             100 & 3.623 & 9.512 & 19.525 & 34.626 \\
         \end{tabular}\\[10pt]
 
-        By varying $n$, the runtime increases slighlty below linear, because
-        increasing $n$ doesn't result in more values that need to get
-        eliminated, but a more costly matrix multiplication in the update $GR$,
-        see algorithm \ref{alg:QR_Givens}, line 6.
+        By varying $n$, the runtime increases approximately linearly. We can distinguish
+        between two cases:
+        \begin{itemize}
+            \item $n\geq m$ Increasing $n$ will not introduce more values to be
+            eliminated, but increase the cost of the matrix multiplication $GR$,
+            see algorithm \ref{alg:QR_Givens}, line 6.
+            \item $n<m$ Here, increasing $n$ will introduce new value to get
+                eliminated in addition to more costly matrix multiplications.
+        \end{itemize}
 
         By varying $m$, the runtime increases superlinear, because we need to
         eliminate more values and the matrix multiplications become more
-        expensive.
+        expensive. Again we can distinguish:
+        \begin{itemize}
+            \item $m\geq n$ Increasing $m$ by $x$ will introduce exactly $n\cdot x$ new values to eliminate.
+            \item $m<n$ Increasing $m$ by $x$ will introduce $m+1+m+2+m+3+\cdots + m + x$ new values to eliminate.
+        \end{itemize}
 
-    \subsection{Optimizing the matmul}
-        In general, we could optimize the matrix multiplication with common
-        techniques like cache-blocking etc. However, if we take a closer look at
-        the Givens rotation matrices, we see that they are very sparse.
-        Additionally, we know in advance which entries of the givens rotation
-        wil be nonzero. Thus we can optimize our matmul. First of all, we can
-        only recalculate columns that will get modified by the multiplication.
-        If we multiply $GR$, where $G=G(i,j,c,s)$, then we only need to modify
-        rows $i,j$ in $R$. Secondly, we know that for calculating those rows we
-        only need to muliply by the $c,s$ in the corresponding row of $G$, since
-        all other values are 0.
+    \subsection{Optimizing the Matrix-Multiplication}
 
-        We need further distinguish between left- ($G R$) and right-hand
-        ($QG$) multiplication. We show the pseudo-code for left-hand, but
-        right-hand is very similar.
-
-        \begin{algorithm}[H]
-            \caption{optimized left-hand Matmul with Givens}\label{alg:Matmul_Fast}
-            \begin{algorithmic}[1]
-            \Procedure{Matmul}{$G=G(i,j,c,s)$, $R$}
-                \State copy the two rows i,j of R into temporary array $T = \begin{bmatrix}
-                    R_{i, :} \\
-                    R_{j, :} \\
-                \end{bmatrix}$
-
-            \For{$k$ in columns of $R$}
-                \State $R_{i, k} = c \cdot T_{1, k} - s \cdot T_{2, k}$
-                \State $R_{j, k} = s \cdot T_{1, k} + c \cdot T_{2, k}$
-            \EndFor
-            \Return $R$
-            \EndProcedure
-            \end{algorithmic}
-        \end{algorithm}
-
-        This leads to the following results:\\
+        Optimizing matmul with algorithm \ref{alg:Matmul_Fast} leads to the
+        following results:\\
         \noindent\begin{tabular}{c|c|c|c}
-            \backslashbox{$m$}{$n$} & 10 & 25 & 50 \\
+        \backslashbox{$m$}{$n$} & 10 & 25 & 50 \\
             \hline
             50 & 0.0003 & 0.0007 & 0.0011 \\
             500 & 0.019 & 0.040 & 0.079 \\
         \end{tabular}\\[10pt]
 
-        We see that for $m=50,n=50$ we get a runtime of roughly
-        $\frac{1}{1000}$ of the original runtime. However these new runtimes
-        vary quite a bit and we would need to scale them up to get more
-        stable, which is not feasible for the baseline.
+        We see that for $m=50,n=50$ we get a runtime of roughly $\frac{1}{1000}$
+        of the original runtime. Therefore, optimizing matrix-multiplication is
+        very effective. Where before we needed to perform $m\cdot m \cdot n$
+        additions and multiplications to perform $QR$, now we need $4 \cdot
+        n-start$ operations, where $start$ is our current columns, see algorithm
+        \ref{alg:Matmul_Fast}.
 
-    \subsection{Compiler flags}
-        For i,j=500
+    \subsection{Compiler flags}\label{res:OptFLag}
+        For $m,n=500$:\\
         \noindent\begin{tabular}{c|c|c|c|c}
             Baseline & -O1 & -O2 & -O3 & -03 -march=native -ffast-math\\
             \hline
             0.747 & 0.167 & 0.137 & 0.134 & 0.119\\
         \end{tabular}\\[10pt]
+        Consequently, we choose \textbf{-03 -march=native -ffast-math} as
+        optimization flag from now on.
 
-    \subsection{Further serial optimizations}
-        Tried those further optimizations
-        \begin{itemize}
-            \item Write pow calls out (compiler flag probably does it already)
-            \item Exchanged div in computation of $c,s$ by multiplication with $\frac{1}{r}$
-            \item Declare the array sizes as constant
-        \end{itemize}
-
-        Those ones helped:
-        \begin{itemize}
-            \item Inline functions, took time down from 1.09 to 0.99 for i,j=1000
-        \end{itemize}
-
-        \begin{itemize}
-            \item maybe profile code
-            \item DONE use compiler flags, best gcc -O3 -march=native -ffast-math
-            \item DONE look if we can reduce arithmetic, eg no div in loop
-            \item DONE inline functions
-            \item loop unrolling
-            \item no if statements
-            \item change pow calls
-            \item cache blocking
-            \item make constants, especially i and j
-            \item pure functions
-            \item uautovectorization (included in 03)
-        \end{itemize}
-
-    \subsection{Memory optimization}
-        The improved matrix multiplication algorithm \ref{alg:Matmul_Fast} shows
-        that we only need to acces two rows per multiplication to perform the
-        update of $R$, for $Q$ we need to acces two columns however. Ultimately,
-        we want to acces matrix elements as close to each other as possible,
-        since by reading one element, we read the whole cache-line and therefore
-        have faster acces to nearby elements in the following steps. Therefore,
-        it makes sense to store $R$ row-wise, and $Q$ column-wise. In that way,
-        we get the most optimal data locality.
-
-        both $Q,R$ row-wise.
-        For j=1000
-        \noindent\begin{tabular}{c|c|c|c}
-            $i$ & 100 & 500 & 1000 \\
+    \subsection{Memory optimization}\label{res:Memory_Opt}
+        We show the effect of storing $Q$ column wise for both modifying $m,n$.
+        The baseline denotes the naive storing of both $Q,R$ row-wise. 
+        
+        For $n=1000$:\\
+         \noindent\begin{tabular}{c|c|c|c}
+             $m$ & 100 & 500 & 1000 \\
             \hline
             baseline & 0.0061 & 0.147 & 0.999\\
-            cache optimized & 0.0047 & 0.115 & 0.590\\
+            optimized & 0.0047 & 0.115 & 0.590\\
         \end{tabular}\\[10pt]
-
-        For i=1000
+        
+        For $m=1000$:\\
         \noindent\begin{tabular}{c|c|c|c}
-            $j$ & 100 & 500 & 1000 \\
+            $n$ & 100 & 500 & 1000 \\
             \hline
             baseline & 0.135 & 0.612 & 0.991\\
-            cache optimized & 0.067 & 0.339 & 0.609\\
+            optimized & 0.067 & 0.339 & 0.609\\
         \end{tabular}\\[10pt]
-
+        
+        We see that by varying $m,n$, we get a consistently better runtime for
+        the column-wise storage. This is because already for small $m,n$, the
+        multiple rows will not fit in one cacheline and therefore we need to
+        jump often between columns to update them. For a column-wise storage
+        however, we pass through the whole cacheline one by one and therefore
+        do not need to get new data from memory that often.
 
     \subsection{Parallelization}
-        \subsubsection{Theory and Implementation}
-            In order to parallelize our code, we first need to check which
-            parts can be done in parallel. First, note that the computation
-            of the Givens rotation in line 5 of algorithm
-            \ref{alg:QR_Givens} is a pure function, eg just depends on the
-            inputs and doesn't have any side effects. Thus, we only need to
-            focus on updating $Q,R$ in line 6. Here, it is necessary to
-            distinguish in two cases:
-            \begin{itemize}
-                \item For left-hand Givens rotation $GR$, if $G=G(i,j,c,s)$,
-                only rows $i,j$ of $R$ get modified
-                \item \item For righ-hand Givens rotation $QG$, if
-                $G=G(i,j,c,s)$, only columns $i,j$ of $Q$ get modified
-            \end{itemize}
-            Consequently, two update steps rotating around
-            $G(i_1,j_1,c_1,s_1)$ and $G(i_2,j_2,c_2,s_2)$ are independent,
-            if $i_1, i_2, j_1, j_2$ are pairwise distinct. This means we
-            need to make sure that if we set $R_{i,j}$ to 0 in one
-            iteration, we can set any other elements in Row $i,j$ to 0 in
-            the same iteration, in order to not interfere between the
-            computations.
+        Because the computation of $m,n$ is a bit more involved now, see
+        \ref{eq:It_Scheme_Parallel}, we get a slightly higher baseline with
+        1.137s compared to 0.986s for our serial code and $m,n=1000$.
+        
+        However when increasing the number of threads, and keeping $m,n=1000$:\\
+        \begin{tikzpicture}[scale=0.7]
+            \begin{axis}[
+                xmin = 0, xmax = 21,
+                ymin = 0.4, ymax = 1.2,
+                xtick distance = 1,
+                ytick distance = 0.1,
+                grid = both,
+                minor tick num = 1,
+                major grid style = {lightgray},
+                minor grid style = {lightgray!25},
+                width = 0.8\textwidth,
+                height = 0.8\textwidth,
+                xlabel = {Number of threads},
+                ylabel = {Time (s)}]
             
             
-            In combination with the constrain that if we want to set
-            $R_{i,j}$ to 0, $R_{i, :j}$ and $R_{i-1, :j}$ already need to be
-            0, (see Section \ref{sub:ElimOrder}) we arrive at the following
-            scheme, shown for a $5\times 5$ matrix:
-            \begin{equation}\label{eq:It_Scheme_Parallel}
-                \begin{bmatrix}
-                    x & x & x & x & x \\
-                    3 & x & x & x & x \\
-                    2 & 4 & x & x & x \\
-                    1 & 3 & 5 & x & x \\
-                    0 & 2 & 4 & 6 & x \\
-                \end{bmatrix}
-            \end{equation}
-            where the values denote in which iteration we can set the
-            element to 0 without cross-interference. This shows that we can
-            set $R_{2,0}$ and $R_{4,1}$ to 0 in parallel for example.
-
-            We arrive at the parallel algorithm:
-            \begin{algorithm}[H]
-                \caption{parallel QR factorization }\label{alg:QR_Parallel}
-                \begin{algorithmic}[1]
-                    \Procedure{Factorize\_Parallel}{$A \in \mathbb{R}^{m\times n}$}
-                        \State set $R=A$, $Q=I$
-                        \For{$it$ in 1 to $(n-1)*2+m-n$}
-                            \State In parallel:
-                            \For{$i,j$ given by the iteration scheme \ref{eq:It_Scheme_Parallel}}
-                                \State compute the Givens rotation $G(i,i-1,c,s)$ eliminating $R_{ij}$ 
-                                \State set $R=G(i,j,c,s) R$, $Q = Q G(i,j,c,s)$
-                            \EndFor
-                        \EndFor
-                    \EndProcedure
-                \end{algorithmic}
-            \end{algorithm}
-
-            The code was getting parallelized with \textbf{OpenMP}. Since we
-            have equal load in line 6+7 of algorithm \ref{alg:QR_Parallel},
-            we don't need to use load balancing.
-
-            Looking at \ref{eq:It_Scheme_Parallel}, we cannot expect a linear scaling
-            with the number of threads. For example in iteration 0 and 1, we
-            only have 1 element so there is no speedup by using more
-            threads. More formally if $A \in \mathbb{R}^{m\times n}$, then
-            we can have a maximum of $\min(m/2, n)$ computations running in
-            parallel, achieved in the itertation where we set $R_{1,0}$ to
-            0.
-
-        \subsubsection{Results}
-            Because the computation of $i,j$ is a bit more involved now, we
-            get a slightly higher baseline with 1.137s compared to 0.986s
-            for our serial code and $i,j=1000$. However when increasing the number of threads:\\
-            \begin{tikzpicture}[scale=0.7]
-                \begin{axis}[
-                    xmin = 0, xmax = 21,
-                    ymin = 0.4, ymax = 1.2,
-                    xtick distance = 1,
-                    ytick distance = 0.1,
-                    grid = both,
-                    minor tick num = 1,
-                    major grid style = {lightgray},
-                    minor grid style = {lightgray!25},
-                    width = 0.8\textwidth,
-                    height = 0.8\textwidth,
-                    xlabel = {Number of threads},
-                    ylabel = {Time (s)}]
-                
-                
-                % Plot data from a file
-                \addplot[
-                    scatter,
-                    thin,
-                    red,
-                    dashed
-                ] file[skip first] {data/parallel.dat};
-                
-                \end{axis}
-            \end{tikzpicture}
-
-        \noindent\begin{tabular}{c|c|c|c|c|c}
-                &10 & 100 & 1000 & 2000 & 4000\\
-            \hline
-            $j=1000, i=$ & 0.031 & 0.023 & 0.425 & 4.125 & 58.866 \\
-            $i=1000, j=$ & 0.031 & 0.087 & 0.430 & 1.084 & 2.247\\
-        \end{tabular}\\[10pt]
-
+            % Plot data from a file
+            \addplot[
+                scatter,
+                thin,
+                red,
+                dashed
+            ] file[skip first] {data/parallel.dat};
             
+            \end{axis}
+        \end{tikzpicture}
 
+        The plot shows that we only get a sublinear decrease in runtime by
+        increasing the number of threads. As already discussed in
+        \ref{sec:Parallel}, this is because we have some data-dependencies that
+        prohibit more parallelization. Interestingly, we get an increase for 5
+        threads compared to 4. This is probably because the machine for testing
+        has 4 high-performance and 4 efficiency cores, so by using 5 threads the
+        high-performance cores have to wait for the efficiency ones.
 
+        As also already discussed we get more parallelization the further our
+        iterations are. Therefore, we also change the matrix sizes ($m$ in red,
+        $n$ in blue) for a constant size of threads (4 since this was the best
+        value in the previous result):\\
+
+        \begin{tikzpicture}[scale=0.7]
+            \begin{axis}[
+                xmin = 0, xmax = 4100,
+                ymin = 0, ymax = 16,
+                xtick distance = 500,
+                ytick distance = 1,
+                grid = both,
+                minor tick num = 1,
+                major grid style = {lightgray},
+                minor grid style = {lightgray!25},
+                width = 0.8\textwidth,
+                height = 0.8\textwidth,
+                xlabel = {Number of threads},
+                ylabel = {Time (s)}]
             
+            
+            % Plot data from a file
+            \addplot[
+                scatter,
+                thin,
+                red,
+                dashed
+            ] file[skip first] {data/parallel_m.dat};
+            \addplot[
+                scatter,
+                thin,
+                blue,
+                dashed
+            ] file[skip first] {data/parallel_n.dat};
+            
+            \end{axis}
+        \end{tikzpicture}
 
 
-\section{Memory optimization}
-    Maybe try to store Q in column format and R in row format??
-
-
-
-\section{Random} 
-    \begin{itemize}
-        \item we can order them by affecting row and above
-        \item best is probably to create tasks because upper rows require less work
-        \item maybe need memory optimizations, but most of the operations seem to be near anyway
-    \end{itemize}
-
-    TODO:
-    \begin{itemize}
-        \item implement checks
-        \item implement good storage of G
-        \item implement efficient matmul of G
-        \item implement one givens rotation
-        \item implement outer loop
-        \item serial optimizations
-        \item parallelizations, probably with openmp
-    \end{itemize}
-
-
-
-
-
-\section{Experiments}
+        When comparing to the results \ref{res:Memory_Opt}, we see that from
+        $m=100$ to $m=1000$, we now get an increase of approximately 20 times,
+        versus 120 times before. This means that while we still have an
+        superlinear increase in total, it is less than before. In the case of
+        $n$ we see that we have a slightly higher than linear increase, which is
+        on par with earlier results \ref{res:Baseline}.
+        
 \section{Conclusion}
+    This report shows how to perform several optimization to reduce the runtime
+    of the QR Factorization. First, we performed some serial optimizations, most
+    importantly a new matrix-multiplication which made use of a sparse Givens
+    Matrix $G$. This turned out to be very effective in reducing the runtime.
+    Secondly, we showed a way to parallelize the code. Here, we can eliminate
+    multiple elements in parallel. This however requires an elaborate scheme of
+    iterating over the elements, and does not get linear increase with the
+    number of threads since we have multiple data dependencies. The final
+    algorithm was able to perform the task significantly faster than the naive
+    implementation.
+
 \section{References}
-$https://www.math.usm.edu/lambers/mat610/sum10/lecture9.pdf
-https://www.math.usm.edu/lambers/mat610/class0208.pdf
-https://en.wikipedia.org/wiki/Givens_rotation$
+    \begin{itemize}
+        \item \url{https://www.math.usm.edu/lambers/mat610/sum10/lecture9.pdf}
+        \item \url{https://www.math.usm.edu/lambers/mat610/class0208.pdf}
+        \item \url{https://en.wikipedia.org/wiki/Givens_rotation}
+    \end{itemize}
+    Note: Even if these pages contain code, no code was used from these pages.
+    Only the explanations were used to get an understanding of the algorithm, all
+    sections and the code are written independently.
+
 
 
 

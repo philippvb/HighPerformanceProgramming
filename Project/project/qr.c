@@ -91,7 +91,7 @@ typedef struct givens{
  * @param X The factorization matrix R, in row format
  * @param n The dimension m
  */
-inline void matmul_givens_R(givens_t g, double* R, int m, int n){
+inline void matmul_givens_R(givens_t g, double* R, int m, int n, int start){
     // copy the two rows in intermediate matrix
     double* row_copy = malloc(2*n*sizeof(double));
     for(int i=0; i<n; i++){
@@ -99,7 +99,7 @@ inline void matmul_givens_R(givens_t g, double* R, int m, int n){
         row_copy[n+i] = R[g.j*n + i];
     }
     // iterate over all columns, compute the matmul
-    for(int k=0; k<n; k++){
+    for(int k=start; k<n; k++){
         // R_ik = c * R_ik - s * R_jk
         R[g.i*n + k] = g.c * row_copy[k] - g.s * row_copy[n+k];
 
@@ -168,12 +168,12 @@ inline void compute_givens_factors(double a, double b, givens_t* G){
     double t;
     if(fabs(a)>fabs(b)){
         t = a/b;
-        G->s = ((b > 0) - (b < 0))/sqrt(1+pow(t,2));
+        G->s = ((b > 0) - (b < 0))/sqrt(1+t*t);
         G->c = G->s * t;
     }
     else{
         t = b/a;
-        G->c = ((a > 0) - (a < 0))/sqrt(1+pow(t,2));
+        G->c = ((a > 0) - (a < 0))/sqrt(1+t*t);
         G->s = G->c * t;
     }
 }
@@ -245,7 +245,7 @@ void factorize(double* A, double** Q_p, double** R_p, int m, int n){
             g.i = i;
             g.j = i-1;
             // update Q and R
-            matmul_givens_R(g, R, m, n);
+            matmul_givens_R(g, R, m, n, j);
             matmul_givens_Q(g, Q, m);
         }
     }
